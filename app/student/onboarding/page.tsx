@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@hookform/resolvers/zod/src/zod";
 import { studentOnboardingSchema, StudentOnboardingValues } from "@/schemas/student";
 import { completeStudentOnboarding } from "@/actions/student/index";
 import { toast } from "sonner"; // 👈 Sonner import
