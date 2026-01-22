@@ -1,6 +1,9 @@
 import { Suspense } from "react";
 import ProfileContent from "./profile-content";
 
+// Next.js 15: Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }

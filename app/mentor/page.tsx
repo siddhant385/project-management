@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge'
 import { CheckCircle, Clock, Search, Users, Plus, LayoutDashboard } from 'lucide-react'
 import Link from 'next/link'
 
-// Next.js 15 caching fix
+// Next.js 15: Force dynamic rendering for authenticated routes
+export const dynamic = 'force-dynamic'
 
 export default async function MentorDashboard() {
   const { assigned_projects, pending_reviews, open_projects, stats } = await getMentorDashboardData()

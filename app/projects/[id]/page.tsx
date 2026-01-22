@@ -21,7 +21,8 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 
-// ✅ FIX 1: Next.js ko batao ki ye page dynamic hai (Caching Error Fix)
+// Next.js 15: Force dynamic rendering for authenticated routes
+export const dynamic = 'force-dynamic'
 
 const getInitials = (name: string) => name?.substring(0, 2).toUpperCase() || 'U'
 

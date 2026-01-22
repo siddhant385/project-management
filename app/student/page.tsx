@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Plus, FolderGit2 } from 'lucide-react'
 import Link from 'next/link'
 
+// Next.js 15: Force dynamic rendering for authenticated routes
+export const dynamic = 'force-dynamic'
 
 export default async function StudentDashboard() {
   const { owned, member } = await getUserProjects()
