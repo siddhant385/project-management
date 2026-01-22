@@ -359,6 +359,10 @@ export function ProjectTimeline({
           canEdit={canEdit}
           open={!!selectedMilestone}
           onClose={() => setSelectedMilestone(null)}
+          onUpdate={() => {
+            // Trigger page refresh to get updated data
+            window.location.reload();
+          }}
         />
       )}
 

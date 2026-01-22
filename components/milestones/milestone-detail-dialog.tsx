@@ -3,8 +3,11 @@
 import { useState, useEffect } from "react";
 import {
   Milestone,
+  MilestoneStatus,
   getMilestoneActivities,
   addMilestoneActivity,
+  updateMilestoneStatus,
+  updateMilestoneProgress,
   MilestoneActivity,
 } from "@/actions/milestones";
 import {
@@ -19,6 +22,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Calendar,
   MessageSquare,
@@ -28,6 +39,8 @@ import {
   Circle,
   Send,
   Activity,
+  Edit2,
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -74,6 +87,7 @@ interface MilestoneDetailDialogProps {
   canEdit: boolean;
   open: boolean;
   onClose: () => void;
+  onUpdate?: () => void;
 }
 
 export function MilestoneDetailDialog({
@@ -81,10 +95,17 @@ export function MilestoneDetailDialog({
   canEdit,
   open,
   onClose,
+  onUpdate,
 }: MilestoneDetailDialogProps) {
   const [activities, setActivities] = useState<MilestoneActivity[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(true);
   const [addingComment, setAddingComment] = useState(false);
+  const [isEditingStatus, setIsEditingStatus] = useState(false);
+  const [isEditingProgress, setIsEditingProgress] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState<MilestoneStatus>(milestone.status);
+  const [currentProgress, setCurrentProgress] = useState(milestone.progress);
+  const [savingStatus, setSavingStatus] = useState(false);
+  const [savingProgress, setSavingProgress] = useState(false);
 
   const { register, handleSubmit, reset, watch } = useForm({
     defaultValues: { comment: "" },
@@ -95,8 +116,12 @@ export function MilestoneDetailDialog({
   useEffect(() => {
     if (open) {
       loadActivities();
+      setCurrentStatus(milestone.status);
+      setCurrentProgress(milestone.progress);
+      setIsEditingStatus(false);
+      setIsEditingProgress(false);
     }
-  }, [open, milestone.id]);
+  }, [open, milestone.id, milestone.status, milestone.progress]);
 
   const loadActivities = async () => {
     setLoadingActivities(true);
@@ -107,6 +132,52 @@ export function MilestoneDetailDialog({
       toast.error("Failed to load activities");
     } finally {
       setLoadingActivities(false);
+    }
+  };
+
+  const handleStatusChange = async (newStatus: MilestoneStatus) => {
+    setCurrentStatus(newStatus);
+  };
+
+  const saveStatus = async () => {
+    if (currentStatus === milestone.status) {
+      setIsEditingStatus(false);
+      return;
+    }
+    
+    setSavingStatus(true);
+    try {
+      await updateMilestoneStatus(milestone.id, currentStatus);
+      toast.success("Status updated successfully");
+      setIsEditingStatus(false);
+      await loadActivities();
+      onUpdate?.();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update status");
+      setCurrentStatus(milestone.status);
+    } finally {
+      setSavingStatus(false);
+    }
+  };
+
+  const saveProgress = async () => {
+    if (currentProgress === milestone.progress) {
+      setIsEditingProgress(false);
+      return;
+    }
+    
+    setSavingProgress(true);
+    try {
+      await updateMilestoneProgress(milestone.id, currentProgress);
+      toast.success("Progress updated successfully");
+      setIsEditingProgress(false);
+      await loadActivities();
+      onUpdate?.();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update progress");
+      setCurrentProgress(milestone.progress);
+    } finally {
+      setSavingProgress(false);
     }
   };
 
@@ -137,7 +208,7 @@ export function MilestoneDetailDialog({
       (1000 * 60 * 60 * 24)
   );
 
-  const config = statusConfig[milestone.status];
+  const config = statusConfig[currentStatus];
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -145,10 +216,6 @@ export function MilestoneDetailDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 flex-wrap">
             {milestone.title}
-            <Badge className={config.bgColor}>
-              {config.icon}
-              <span className="ml-1">{config.label}</span>
-            </Badge>
           </DialogTitle>
           <DialogDescription>
             Milestone details and progress tracking
@@ -156,6 +223,82 @@ export function MilestoneDetailDialog({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Status Section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium">Status</h4>
+              {canEdit && !isEditingStatus && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setIsEditingStatus(true)}
+                  className="h-7 px-2"
+                >
+                  <Edit2 className="h-3 w-3 mr-1" />
+                  Edit
+                </Button>
+              )}
+            </div>
+            
+            {isEditingStatus ? (
+              <div className="flex items-center gap-2">
+                <Select 
+                  value={currentStatus} 
+                  onValueChange={(value) => handleStatusChange(value as MilestoneStatus)}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">
+                      <div className="flex items-center gap-2">
+                        <Circle className="h-3 w-3 text-slate-500" />
+                        Pending
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="in_progress">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-3 w-3 text-blue-500" />
+                        In Progress
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="completed">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-3 w-3 text-green-500" />
+                        Completed
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button 
+                  size="sm" 
+                  onClick={saveStatus}
+                  disabled={savingStatus}
+                  className="h-8"
+                >
+                  <Save className="h-3 w-3 mr-1" />
+                  {savingStatus ? "Saving..." : "Save"}
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="ghost"
+                  onClick={() => {
+                    setCurrentStatus(milestone.status);
+                    setIsEditingStatus(false);
+                  }}
+                  className="h-8"
+                >
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <Badge className={config.bgColor}>
+                {config.icon}
+                <span className="ml-1">{config.label}</span>
+              </Badge>
+            )}
+          </div>
+
           {/* Basic Info */}
           <div className="space-y-4">
             {milestone.description && (
@@ -171,11 +314,57 @@ export function MilestoneDetailDialog({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium">Progress</h4>
-                <span className="text-sm font-medium">
-                  {milestone.progress}%
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">
+                    {isEditingProgress ? currentProgress : milestone.progress}%
+                  </span>
+                  {canEdit && !isEditingProgress && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setIsEditingProgress(true)}
+                      className="h-7 px-2"
+                    >
+                      <Edit2 className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
               </div>
-              <Progress value={milestone.progress} className="h-2" />
+              
+              {isEditingProgress ? (
+                <div className="space-y-3">
+                  <Slider
+                    value={[currentProgress]}
+                    onValueChange={(value) => setCurrentProgress(value[0])}
+                    max={100}
+                    step={5}
+                    className="w-full"
+                  />
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      size="sm" 
+                      onClick={saveProgress}
+                      disabled={savingProgress}
+                    >
+                      <Save className="h-3 w-3 mr-1" />
+                      {savingProgress ? "Saving..." : "Save Progress"}
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      onClick={() => {
+                        setCurrentProgress(milestone.progress);
+                        setIsEditingProgress(false);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Progress value={milestone.progress} className="h-2" />
+              )}
             </div>
 
             {/* Details Grid */}

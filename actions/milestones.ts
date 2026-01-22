@@ -180,6 +180,80 @@ export async function updateMilestoneProgress(
   revalidatePath(`/projects/${milestone.project_id}`);
 }
 
+// Update milestone status
+export async function updateMilestoneStatus(
+  milestoneId: string,
+  status: MilestoneStatus
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  // Get milestone with project info to check permissions
+  const { data: milestone, error: fetchError } = await supabase
+    .from("milestones")
+    .select(`
+      *,
+      project:projects(id, initiator_id, final_mentor_id)
+    `)
+    .eq("id", milestoneId)
+    .single();
+
+  if (fetchError || !milestone) throw new Error("Milestone not found");
+
+  // Check if user is project owner or mentor
+  const isOwner = milestone.project?.initiator_id === user.id;
+  const isMentor = milestone.project?.final_mentor_id === user.id;
+
+  if (!isOwner && !isMentor) {
+    throw new Error("You don't have permission to update this milestone");
+  }
+
+  const statusLabels: Record<MilestoneStatus, string> = {
+    pending: "Pending",
+    in_progress: "In Progress",
+    completed: "Completed",
+    overdue: "Overdue",
+  };
+
+  // Update milestone status
+  const updateData: any = { status };
+  
+  // If completing, set completed_at and progress to 100
+  if (status === "completed") {
+    updateData.completed_at = new Date().toISOString();
+    updateData.progress = 100;
+  } else if (status === "pending") {
+    // If setting back to pending, reset completed_at
+    updateData.completed_at = null;
+  }
+
+  const { error } = await supabase
+    .from("milestones")
+    .update(updateData)
+    .eq("id", milestoneId);
+
+  if (error) {
+    console.error("Error updating milestone status:", error);
+    throw new Error("Failed to update milestone status");
+  }
+
+  // Log activity
+  await supabase.from("milestone_activities").insert({
+    milestone_id: milestoneId,
+    user_id: user.id,
+    activity_type: "status_change",
+    description: `Changed status to "${statusLabels[status]}"`,
+    metadata: { old_status: milestone.status, new_status: status },
+  });
+
+  revalidatePath(`/projects/${milestone.project?.id}`);
+  return { success: true };
+}
+
 // Delete milestone
 export async function deleteMilestone(milestoneId: string) {
   const supabase = await createClient();

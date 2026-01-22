@@ -2,6 +2,82 @@
 
 import { createClient } from '@/lib/supabase/server'
 
+// 0. Get Public Homepage Stats (No Auth Required)
+export async function getPublicStats() {
+  const supabase = await createClient()
+  
+  // Total Projects
+  const { count: totalProjects } = await supabase
+    .from('projects')
+    .select('*', { count: 'exact', head: true })
+  
+  // Active Projects (in_progress)
+  const { count: activeProjects } = await supabase
+    .from('projects')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'in_progress')
+  
+  // Completed Projects
+  const { count: completedProjects } = await supabase
+    .from('projects')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'completed')
+  
+  // Total Students
+  const { count: totalStudents } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+    .eq('role', 'student')
+  
+  // Total Mentors
+  const { count: totalMentors } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+    .eq('role', 'mentor')
+  
+  // Recent Projects (for showcase)
+  const { data: recentProjects } = await supabase
+    .from('projects')
+    .select(`
+      id,
+      title,
+      description,
+      tags,
+      status,
+      created_at,
+      initiator:profiles!initiator_id(full_name, avatar_url)
+    `)
+    .order('created_at', { ascending: false })
+    .limit(6)
+
+  // Featured/Popular Projects (approved ones with mentor)
+  const { data: featuredProjects } = await supabase
+    .from('projects')
+    .select(`
+      id,
+      title,
+      description,
+      tags,
+      status,
+      created_at,
+      initiator:profiles!initiator_id(full_name, avatar_url),
+      mentor:profiles!final_mentor_id(full_name, avatar_url)
+    `)
+    .not('final_mentor_id', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(4)
+
+  return {
+    totalProjects: totalProjects || 0,
+    activeProjects: activeProjects || 0,
+    completedProjects: completedProjects || 0,
+    totalStudents: totalStudents || 0,
+    totalMentors: totalMentors || 0,
+    recentProjects: recentProjects || [],
+    featuredProjects: featuredProjects || []
+  }
+}
+
 // 1. Get Global Stats (RPC call)
 export async function getDashboardStats() {
   const supabase = await createClient()
@@ -245,5 +321,115 @@ export async function getMentorDashboardData() {
     pending_reviews: requests,
     open_projects: openProjects || [], // New Return
     stats // New Return
+  }
+}
+
+// 4. Get Mentor Chart Data - Project Performance & Activity Heatmap
+export async function getMentorChartData() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) return { performanceData: [], activityData: [] }
+
+  // A. Get all mentor's projects with milestones and tasks
+  const { data: projects } = await supabase
+    .from('projects')
+    .select(`
+      id,
+      title,
+      status
+    `)
+    .eq('final_mentor_id', user.id)
+
+  const projectIds = projects?.map(p => p.id) || []
+  
+  if (projectIds.length === 0) {
+    return { performanceData: [], activityData: [] }
+  }
+
+  // B. Get milestones for all projects
+  const { data: milestones } = await supabase
+    .from('milestones')
+    .select('id, project_id, status, progress')
+    .in('project_id', projectIds)
+
+  // C. Get tasks for all projects
+  const { data: tasks } = await supabase
+    .from('tasks')
+    .select('id, project_id, status')
+    .in('project_id', projectIds)
+
+  // D. Calculate performance data for each project
+  const performanceData = projects?.map(project => {
+    const projectMilestones = milestones?.filter(m => m.project_id === project.id) || []
+    const projectTasks = tasks?.filter(t => t.project_id === project.id) || []
+    
+    const completedMilestones = projectMilestones.filter(m => m.status === 'completed').length
+    const completedTasks = projectTasks.filter(t => t.status === 'done').length
+    
+    // Calculate overall progress
+    let progress = 0
+    if (projectMilestones.length > 0) {
+      progress = Math.round(
+        projectMilestones.reduce((sum, m) => sum + m.progress, 0) / projectMilestones.length
+      )
+    } else if (projectTasks.length > 0) {
+      progress = Math.round((completedTasks / projectTasks.length) * 100)
+    }
+
+    return {
+      name: project.title.length > 15 ? project.title.substring(0, 15) + '...' : project.title,
+      progress,
+      tasks_completed: completedTasks,
+      total_tasks: projectTasks.length,
+      milestones_completed: completedMilestones,
+      total_milestones: projectMilestones.length,
+    }
+  }) || []
+
+  // E. Get activity data for heatmap (last 3 months)
+  const threeMonthsAgo = new Date()
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+  
+  const milestoneIds = milestones?.map(m => m.id) || []
+  
+  let activities: any[] = []
+  if (milestoneIds.length > 0) {
+    const { data: activityData } = await supabase
+      .from('milestone_activities')
+      .select('id, created_at, activity_type, description')
+      .in('milestone_id', milestoneIds)
+      .gte('created_at', threeMonthsAgo.toISOString())
+      .order('created_at', { ascending: false })
+    
+    activities = activityData || []
+  }
+
+  // Also get task updates (assuming we track when tasks are updated)
+  // For now, we'll just use milestone activities
+  
+  // F. Group activities by date for heatmap
+  const activityMap = new Map<string, { count: number; activities: { type: string; description: string }[] }>()
+  
+  activities.forEach(activity => {
+    const date = new Date(activity.created_at).toISOString().split('T')[0]
+    const existing = activityMap.get(date) || { count: 0, activities: [] }
+    existing.count++
+    existing.activities.push({
+      type: activity.activity_type,
+      description: activity.description,
+    })
+    activityMap.set(date, existing)
+  })
+
+  const activityData = Array.from(activityMap.entries()).map(([date, data]) => ({
+    date,
+    count: data.count,
+    activities: data.activities,
+  }))
+
+  return {
+    performanceData: performanceData.sort((a, b) => b.progress - a.progress),
+    activityData,
   }
 }

@@ -78,8 +78,9 @@ export async function updateSession(request: NextRequest) {
       
       // SCENARIO B: Onboarding Complete hai
       else {
-        // Agar user Login page ya Root ('/') par hai -> Dashboard bhejo
-        if (path === "/" || path.startsWith("/auth") || path === "/login") {
+        // Agar user Login/Auth pages par hai -> Dashboard bhejo
+        // NOTE: Homepage ("/") ko ab redirect nahi karenge, user homepage dekh sake
+        if (path.startsWith("/auth") || path === "/login") {
           const url = request.nextUrl.clone();
           url.pathname = `/${role}`; // Directly goes to /student, /admin etc.
           return NextResponse.redirect(url);
