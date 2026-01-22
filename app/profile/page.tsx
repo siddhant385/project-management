@@ -39,7 +39,7 @@ export default function ProfilePage() {
       bio: "",
       department: "",
       roll_number: "",
-      admission_year: 0,
+      admission_year: undefined,
       skills: "",
       contact_info: {
         phone_no: "",

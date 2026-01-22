@@ -26,15 +26,18 @@ export const profileSchema = z.object({
   // Fix 2: Admission Year handling
   // Agar value exists kare to number mein convert kro, warna undefined rehne do
   admission_year: z
-    .union([
-        z.coerce.number().min(2015).max(new Date().getFullYear()), 
-        z.string().length(0), // Allow empty string
-        z.literal(0), // Allow 0 if explicitly set
-        z.null(),
-        z.undefined()
-    ])
-    .optional()
-    .transform((e) => (e === "" || e === 0 ? undefined : e)), // Empty string ko undefined bana do
+  .preprocess(
+    (val) => {
+      if (val === "" || val === null || val === undefined) return undefined;
+      const num = Number(val);
+      return isNaN(num) ? undefined : num;
+    },
+    z
+      .number()
+      .min(2015, "Invalid admission year")
+      .max(new Date().getFullYear(), "Invalid admission year")
+      .optional()
+  ),
 
   // Fix 3: Skills ko String hi rakho Form ke liye.
   // Server action me .split(',') kar lena.
