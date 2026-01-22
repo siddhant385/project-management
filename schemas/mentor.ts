@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 
 export const mentorOnboardingSchema = z.object({
   full_name: z.string().min(2, { 
@@ -6,7 +6,7 @@ export const mentorOnboardingSchema = z.object({
   }),
   
   department: z.enum(["CSE", "ECE", "ME", "CE", "IT", "AIDS", "EE","MECH", "IP", "MATH", "CHEM", "PHY", "T&P"], {
-    required_error: "Its compulsory to select the department.",
+    message: "Its compulsory to select the department.",
   }),
 
   // Mentors ke liye hum skills pooch sakte hain (comma separated)

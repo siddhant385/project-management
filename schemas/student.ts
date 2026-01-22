@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 
 export const studentOnboardingSchema = z.object({
   full_name: z.string().min(2, { 
@@ -6,11 +6,11 @@ export const studentOnboardingSchema = z.object({
   }),
   
   department: z.enum(["CSE", "ECE", "ME", "CE", "IT", "AIDS", "EE", "IP", "MATH", "CHEM", "PHY", "T&P","MECH"], {
-    required_error: "Its compulsory for you to chosse the deaprtment.",
+    message: "Its compulsory for you to choose the department.",
   }),
 
   admission_year: z.coerce.number()
-    .min(2015, "Year should be choosen after 2015")
+    .min(2015, "Year should be chosen after 2015")
     .max(new Date().getFullYear(), "Future years aren't allowed"),
 
   roll_number: z.string().min(1, { 

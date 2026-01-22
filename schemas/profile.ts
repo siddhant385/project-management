@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 
 // Helper for optional empty strings (Common pattern in forms)
 const optionalString = z.string().optional().or(z.literal(""));
