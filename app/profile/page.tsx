@@ -32,26 +32,26 @@ export default function ProfilePage() {
   const [userEmail, setUserEmail] = useState<string>("");
 
   /* ---------------- FORM SETUP ---------------- */
-  const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      full_name: "",
-      bio: "",
-      department: "",
-      roll_number: "",
-      admission_year: undefined,
-      skills: "",
-      contact_info: {
-        phone_no: "",
-        whatsapp_no: "",
-        telegram: "",
-        twitter: "",
-        github: "",
-        linkedin: "",
-        website: "",
-      },
+  const form = useForm({
+  resolver: zodResolver(profileSchema),
+  defaultValues: {
+    full_name: "",
+    bio: "",
+    department: "",
+    roll_number: "",
+    admission_year: undefined,
+    skills: "",
+    contact_info: {
+      phone_no: "",
+      whatsapp_no: "",
+      telegram: "",
+      twitter: "",
+      github: "",
+      linkedin: "",
+      website: "",
     },
-  });
+  },
+});
 
   /* ---------------- LOAD PROFILE ---------------- */
   useEffect(() => {
