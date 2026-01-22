@@ -9,16 +9,16 @@ const username = z.string().min(3).max(50).optional().or(z.literal(""));
 export const profileSchema = z.object({
   full_name: z
     .string()
-    .min(2, "Name must be at least 2 characters")
-    .max(50, "Name too long"),
+    .min(2, { error: "Name must be at least 2 characters" })
+    .max(50, { error: "Name too long" }),
 
   bio: z
     .string()
-    .max(500, "Bio cannot exceed 500 characters")
+    .max(500, { error: "Bio cannot exceed 500 characters" })
     .optional()
     .or(z.literal("")),
 
-  department: z.string().min(2, "Department is required"),
+  department: z.string().min(2, { error: "Department is required" }),
 
   // Fix 1: Roll number bhi empty string aa sakta hai
   roll_number: optionalString,
@@ -26,8 +26,8 @@ export const profileSchema = z.object({
   // Fix 2: Admission Year handling - simplified for proper type inference
   admission_year: z.coerce
     .number()
-    .min(2015, "Year after 2015 is needed")
-    .max(new Date().getFullYear(), "Future Admission Year detected")
+    .min(2015, { error: "Year after 2015 is needed" })
+    .max(new Date().getFullYear(), { error: "Future Admission Year detected" })
     .optional(),
 
   // Fix 3: Skills ko String hi rakho Form ke liye.
@@ -38,13 +38,13 @@ export const profileSchema = z.object({
   contact_info: z.object({
     phone_no: z
       .string()
-      .regex(/^\+?[0-9]{10,15}$/, "Invalid phone number")
+      .regex(/^\+?[0-9]{10,15}$/, { error: "Invalid phone number" })
       .optional()
       .or(z.literal("")),
 
     whatsapp_no: z
       .string()
-      .regex(/^\+?[0-9]{10,15}$/, "Invalid WhatsApp number")
+      .regex(/^\+?[0-9]{10,15}$/, { error: "Invalid WhatsApp number" })
       .optional()
       .or(z.literal("")),
 
@@ -55,7 +55,7 @@ export const profileSchema = z.object({
 
     website: z
       .string()
-      .url("Invalid URL (include https://)")
+      .url({ error: "Invalid URL (include https://)" })
       .optional()
       .or(z.literal("")),
   }),
