@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod/src/zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { mentorOnboardingSchema, MentorOnboardingValues } from "@/schemas/mentor";
 import { completeMentorOnboarding } from "@/actions/mentor/index";
 import { toast } from "sonner"; 
@@ -28,7 +28,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function MentorOnboarding() {
   const form = useForm<MentorOnboardingValues>({
-    resolver: zodResolver(mentorOnboardingSchema),
+    resolver: zodResolver(mentorOnboardingSchema) as any,
     defaultValues: {
       full_name: "",
       department: undefined,

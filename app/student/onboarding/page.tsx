@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod/src/zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { studentOnboardingSchema, StudentOnboardingValues } from "@/schemas/student";
 import { completeStudentOnboarding } from "@/actions/student/index";
 import { toast } from "sonner"; // 👈 Sonner import
@@ -28,7 +28,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function StudentOnboarding() {
   const form = useForm<StudentOnboardingValues>({
-    resolver: zodResolver(studentOnboardingSchema),
+    resolver: zodResolver(studentOnboardingSchema) as any,
     defaultValues: {
       full_name: "",
       department: undefined,
