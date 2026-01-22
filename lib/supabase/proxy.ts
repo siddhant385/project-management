@@ -1,20 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { hasEnvVars } from "../utils";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
 
-  // If the env vars are not set, skip proxy check. You can remove this
-  // once you setup the project.
-  if (!hasEnvVars) {
-    return supabaseResponse;
-  }
-
-  // With Fluid compute, don't put this client in a global environment
-  // variable. Always create a new one on each request.
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
@@ -38,39 +29,74 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // Do not run code between createServerClient and
-  // supabase.auth.getClaims(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // IMPORTANT: If you remove getClaims() and you use server-side rendering
-  // with the Supabase client, your users may be randomly logged out.
-  const { data } = await supabase.auth.getClaims();
-  const user = data?.claims;
-
+  // 1. Agar user login nahi hai aur protected route par hai
   if (
-    request.nextUrl.pathname !== "/" &&
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/auth")
   ) {
-    // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);
   }
 
-  // IMPORTANT: You *must* return the supabaseResponse object as it is.
-  // If you're creating a new response object with NextResponse.next() make sure to:
-  // 1. Pass the request in it, like so:
-  //    const myNewResponse = NextResponse.next({ request })
-  // 2. Copy over the cookies, like so:
-  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-  // 3. Change the myNewResponse object to fit your needs, but avoid changing
-  //    the cookies!
-  // 4. Finally:
-  //    return myNewResponse
-  // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely!
+  // 2. Agar User Logged In hai
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, onboarding_completed")
+      .eq("id", user.id)
+      .single();
+
+    if (profile) {
+      const path = request.nextUrl.pathname;
+      const role = profile.role; // 'student', 'mentor', or 'admin'
+
+      // --- LOGIC START ---
+
+      // SCENARIO A: Onboarding Incomplete hai
+      if (!profile.onboarding_completed) {
+        // Agar user apne sahi onboarding page par nahi hai, to wahan bhejo
+        // Example: Agar student hai aur '/student/onboarding' par nahi hai
+        if (!path.startsWith(`/${role}/onboarding`)) {
+          const url = request.nextUrl.clone();
+          url.pathname = `/${role}/onboarding`;
+          return NextResponse.redirect(url);
+        }
+      } 
+      
+      // SCENARIO B: Onboarding Complete hai
+      else {
+        // Agar user Login page ya Root ('/') par hai -> Dashboard bhejo
+        if (path === "/" || path.startsWith("/auth") || path === "/login") {
+          const url = request.nextUrl.clone();
+          url.pathname = `/${role}`; // Directly goes to /student, /admin etc.
+          return NextResponse.redirect(url);
+        }
+
+        // OPTIONAL SECURITY: Cross-Role Protection
+        // Agar 'student' galti se '/admin' wale route pe jaane ki koshish kare
+        if (path.startsWith("/admin") && role !== "admin") {
+           const url = request.nextUrl.clone();
+           url.pathname = `/${role}`; // Wapas apne dashboard pe bhejo
+           return NextResponse.redirect(url);
+        }
+        if (path.startsWith("/mentor") && role !== "mentor") {
+           const url = request.nextUrl.clone();
+           url.pathname = `/${role}`;
+           return NextResponse.redirect(url);
+        }
+         if (path.startsWith("/student") && role !== "student") {
+           const url = request.nextUrl.clone();
+           url.pathname = `/${role}`;
+           return NextResponse.redirect(url);
+        }
+      }
+      // --- LOGIC END ---
+    }
+  }
 
   return supabaseResponse;
 }

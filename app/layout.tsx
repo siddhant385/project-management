@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import Navbar from "@/components/navbar"; // 👈 Navbar import karo
+import { Suspense } from "react"; // 👈 Import Suspense
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -27,12 +30,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.className} antialiased`}>
+
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
+          <Suspense fallback={<div className="h-16 border-b w-full" />}> 
+            <Navbar /> 
+          </Suspense>
+          <Toaster />
           {children}
         </ThemeProvider>
       </body>
