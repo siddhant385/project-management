@@ -1,12 +1,11 @@
 "use client";
 
-import { Control } from "react-hook-form";
-import { ProfileFormValues } from "@/schemas/profile";
+import { Control, FieldValues } from "react-hook-form";
 import { FormInput } from "./form-input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 
 interface ContactSectionProps {
-  control: Control<ProfileFormValues>;
+  control: Control<FieldValues>;
   isEditing: boolean;
 }
 

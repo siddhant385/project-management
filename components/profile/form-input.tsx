@@ -1,7 +1,6 @@
 "use client";
 
-import { Control } from "react-hook-form";
-import { ProfileFormValues } from "@/schemas/profile";
+import { Control, FieldValues } from "react-hook-form";
 import {
   FormControl,
   FormField,
@@ -13,8 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 interface FormInputProps {
-  control: Control<ProfileFormValues>;
-  name: any;
+  control: Control<FieldValues>;
+  name: string;
   label: string;
   disabled: boolean;
   placeholder?: string;

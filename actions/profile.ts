@@ -3,7 +3,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { deleteFile } from "@/actions/storage"; 
-import { profileSchema, ProfileFormValues } from "@/schemas/profile"; 
+import { profileSchema, ProfileFormValues } from "@/schemas/profile";
+import { z } from "zod/v4";
 
 // Helper: URL se path nikalne ke liye
 function getPathFromUrl(url: string) {
@@ -25,7 +26,9 @@ export async function updateProfile(data: ProfileFormValues, avatarUrl: string |
   // 2. Validation
   const validatedFields = profileSchema.safeParse(data);
   if (!validatedFields.success) {
-    return { error: "Invalid data!", details: validatedFields.error.flatten().fieldErrors };
+    // Zod v4: Use z.treeifyError instead of deprecated .flatten()
+    const errorTree = z.treeifyError(validatedFields.error);
+    return { error: "Invalid data!", details: errorTree };
   }
 
   // 3. Image Cleanup (Purani photo delete karna)

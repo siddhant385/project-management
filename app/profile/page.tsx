@@ -32,7 +32,7 @@ export default function ProfilePage() {
   const [userEmail, setUserEmail] = useState<string>("");
 
   /* ---------------- FORM SETUP ---------------- */
-  const form = useForm({
+  const form = useForm<ProfileFormValues>({
   resolver: zodResolver(profileSchema),
   defaultValues: {
     full_name: "",
@@ -139,14 +139,14 @@ export default function ProfilePage() {
           <div className="grid gap-8 md:grid-cols-2">
             
             <PersonalSection 
-              control={form.control} 
+              control={form.control as any} 
               isEditing={isEditing} 
               userRole={userRole} 
               userEmail={userEmail} 
             />
             
             <ContactSection 
-              control={form.control} 
+              control={form.control as any} 
               isEditing={isEditing} 
             />
             
