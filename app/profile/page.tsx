@@ -68,7 +68,7 @@ export default function ProfilePage() {
           bio: data.bio || "",
           department: data.department || "",
           roll_number: data.roll_number || "",
-          admission_year: data.admission_year || 0,
+          admission_year: data.admission_year ?? undefined,
           skills: data.skills ? data.skills.join(", ") : "",
           contact_info: {
             phone_no: data.contact_info?.phone_no || "",

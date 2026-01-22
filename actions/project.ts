@@ -32,8 +32,8 @@ export async function createProject(formData: FormData) {
     throw new Error('Failed to create project')
   }
 
-  revalidatePath('/student/dashboard') // Dashboard refresh
-  redirect('/student/dashboard')
+  revalidatePath('/student') // Dashboard refresh
+  redirect('/student')
 }
 
 // 2. APPLY TO PROJECT
