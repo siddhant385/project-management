@@ -4,7 +4,8 @@ import Link from "next/link";
 import { User } from "@supabase/supabase-js";
 import { LogOut, User as UserIcon, LayoutDashboard, Settings } from "lucide-react";
 import { signOut } from "@/actions/auth/auth";
-import { ThemeSwitcher } from "./theme-switcher"; 
+import { ThemeSwitcher } from "./theme-switcher";
+import { NotificationsDropdown } from "./notifications/notifications-dropdown";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,11 +31,13 @@ export function UserNav({ user, profile, dashboardUrl }: UserNavProps) {
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-2">
       <ThemeSwitcher />
 
       {user ? (
-        <DropdownMenu>
+        <>
+          <NotificationsDropdown />
+          <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
               <Avatar className="h-9 w-9 border">
@@ -92,6 +95,7 @@ export function UserNav({ user, profile, dashboardUrl }: UserNavProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </>
       ) : (
         <div className="flex gap-2">
           <Button asChild variant="ghost" size="sm">

@@ -1,12 +1,12 @@
 import { getProjectDetails } from '@/actions/project-details'
-import { applyToProject, acceptApplication } from '@/actions/project'
+import { applyToProject, acceptApplication, getProjectReview, deleteProjectFile } from '@/actions/project'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
-import { FileText, Github, Download, ShieldCheck } from 'lucide-react'
+import { FileText, Github, Download, Trash2 } from 'lucide-react'
 
 // Shadcn UI Imports
 import {
@@ -20,6 +20,14 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+
+// Project Components
+import { EditProjectDialog } from '@/components/project/edit-project-dialog'
+import { DeleteProjectButton } from '@/components/project/delete-project-button'
+import { FileUploadDialog } from '@/components/project/file-upload-dialog'
+import { ReviewProjectDialog } from '@/components/project/review-project-dialog'
+import { RejectApplicationButton } from '@/components/project/reject-application-button'
+import { ProjectStatusSelect } from '@/components/project/project-status-select'
 
 // Next.js 15: Force dynamic rendering for authenticated routes
 export const dynamic = 'force-dynamic'
@@ -37,6 +45,9 @@ export default async function ProjectPage({ params }: Props) {
   
   // Ab 'id' use karo instead of 'params.id'
   const { project, members, files, applications, userRole } = await getProjectDetails(id)
+  
+  // Get existing review if mentor
+  const existingReview = userRole.isMentor ? await getProjectReview(id) : null;
 
   return (
     <div className="container max-w-5xl py-10 space-y-8">
@@ -44,15 +55,22 @@ export default async function ProjectPage({ params }: Props) {
       {/* ================= HEADER SECTION ================= */}
       <div className="flex flex-col md:flex-row justify-between gap-4">
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
              <h1 className="text-3xl font-bold">{project.title}</h1>
-             <Badge variant={project.status === 'open' ? 'default' : 'secondary'}>
-               {project.status.toUpperCase()}
-             </Badge>
+             {userRole.isOwner ? (
+               <ProjectStatusSelect 
+                 projectId={project.id} 
+                 currentStatus={project.status} 
+               />
+             ) : (
+               <Badge variant={project.status === 'open' ? 'default' : 'secondary'}>
+                 {project.status.toUpperCase().replace('_', ' ')}
+               </Badge>
+             )}
           </div>
           <p className="text-muted-foreground max-w-2xl">{project.description}</p>
           
-          <div className="flex gap-2 mt-2">
+          <div className="flex gap-2 mt-2 flex-wrap">
              {project.tags?.map((tag: string) => (
                <Badge key={tag} variant="outline">{tag}</Badge>
              ))}
@@ -64,14 +82,19 @@ export default async function ProjectPage({ params }: Props) {
            
            {/* OWNER ACTIONS */}
            {userRole.isOwner && (
-             <Button variant="outline">Edit Project</Button>
+             <>
+               <EditProjectDialog project={project} />
+               <DeleteProjectButton projectId={project.id} projectTitle={project.title} />
+             </>
            )}
 
            {/* MENTOR ACTIONS */}
            {userRole.isMentor && (
-             <Button className="bg-green-600 hover:bg-green-700">
-                <ShieldCheck className="mr-2 h-4 w-4" /> Grade Project
-             </Button>
+             <ReviewProjectDialog 
+               projectId={project.id}
+               projectTitle={project.title}
+               existingReview={existingReview}
+             />
            )}
 
            {/* VISITOR ACTIONS (Apply Logic) */}
@@ -189,7 +212,9 @@ export default async function ProjectPage({ params }: Props) {
            <Card>
              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Documents</CardTitle>
-                {(userRole.isMember || userRole.isOwner) && <Button size="sm" variant="outline">Upload File</Button>}
+                {(userRole.isMember || userRole.isOwner) && (
+                  <FileUploadDialog projectId={project.id} />
+                )}
              </CardHeader>
              <CardContent>
                 {files.length === 0 ? (
@@ -197,17 +222,26 @@ export default async function ProjectPage({ params }: Props) {
                 ) : (
                    <div className="space-y-2">
                       {files.map((file: any) => (
-                         <div key={file.id} className="flex items-center justify-between p-2 border rounded hover:bg-slate-50">
+                         <div key={file.id} className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 dark:hover:bg-slate-900">
                             <div className="flex items-center gap-3">
                                <FileText className="h-4 w-4 text-blue-500" />
                                <span className="text-sm font-medium">{file.file_name}</span>
                                <Badge variant="secondary" className="text-[10px]">{file.type}</Badge>
                             </div>
-                            <Button variant="ghost" size="sm" asChild>
-                              <a href={file.file_url} target="_blank" rel="noopener noreferrer">
-                                <Download className="h-4 w-4 mr-1" /> Download
-                              </a>
-                            </Button>
+                            <div className="flex items-center gap-2">
+                               <Button variant="ghost" size="sm" asChild>
+                                 <a href={file.file_url} target="_blank" rel="noopener noreferrer">
+                                   <Download className="h-4 w-4 mr-1" /> Download
+                                 </a>
+                               </Button>
+                               {(userRole.isOwner || userRole.isMember) && (
+                                 <form action={deleteProjectFile.bind(null, file.id, project.id)}>
+                                   <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                                     <Trash2 className="h-4 w-4" />
+                                   </Button>
+                                 </form>
+                               )}
+                            </div>
                          </div>
                       ))}
                    </div>
@@ -227,19 +261,26 @@ export default async function ProjectPage({ params }: Props) {
                   ) : (
                      <div className="space-y-4">
                         {applications.map((app: any) => (
-                           <div key={app.id} className="flex flex-col md:flex-row justify-between items-center p-4 border rounded">
-                              <div className="mb-2 md:mb-0">
+                           <div key={app.id} className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded gap-4">
+                              <div>
                                  <p className="font-medium">{app.applicant.full_name} <span className="text-xs text-muted-foreground">({app.applicant_role})</span></p>
                                  <p className="text-sm text-muted-foreground italic">"{app.message}"</p>
-                                 <div className="flex gap-1 mt-1">
+                                 <div className="flex gap-1 mt-1 flex-wrap">
                                     {app.applicant.skills?.map((s: string) => (
                                        <Badge key={s} variant="outline" className="text-[10px]">{s}</Badge>
                                     ))}
                                  </div>
                               </div>
-                              <form action={acceptApplication.bind(null, app.id, project.id)}>
-                                 <Button size="sm">Accept Request</Button>
-                              </form>
+                              <div className="flex gap-2">
+                                 <form action={acceptApplication.bind(null, app.id, project.id)}>
+                                    <Button size="sm">Accept</Button>
+                                 </form>
+                                 <RejectApplicationButton 
+                                   applicationId={app.id} 
+                                   applicantName={app.applicant.full_name}
+                                   projectId={project.id}
+                                 />
+                              </div>
                            </div>
                         ))}
                      </div>
