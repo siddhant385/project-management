@@ -30,10 +30,14 @@ import { ReviewProjectDialog } from '@/components/project/review-project-dialog'
 import { RejectApplicationButton } from '@/components/project/reject-application-button'
 import { ProjectStatusSelect } from '@/components/project/project-status-select'
 
-// Task Components
-import { TaskBoard } from '@/components/tasks'
+// Task Components - Using Realtime version
+import { RealtimeTaskBoard } from '@/components/tasks'
 import { getProjectTasks, getTaskStats } from '@/actions/tasks'
 import { Progress } from '@/components/ui/progress'
+
+// Milestone Components - Using Realtime version
+import { RealtimeTimeline, ProgressTracker } from '@/components/milestones'
+import { getProjectMilestones } from '@/actions/milestones'
 
 // Next.js 15: Force dynamic rendering for authenticated routes
 export const dynamic = 'force-dynamic'
@@ -55,6 +59,9 @@ export default async function ProjectPage({ params }: Props) {
   // Get tasks for this project
   const tasks = await getProjectTasks(id)
   const taskStats = await getTaskStats(id)
+  
+  // Get milestones for this project
+  const milestones = await getProjectMilestones(id)
   
   // Get existing review if mentor
   const existingReview = userRole.isMentor ? await getProjectReview(id) : null;
@@ -163,6 +170,7 @@ export default async function ProjectPage({ params }: Props) {
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="w-full md:w-auto md:inline-flex">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="timeline">Timeline</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="team">Team</TabsTrigger>
           <TabsTrigger value="files">Files</TabsTrigger>
@@ -171,71 +179,98 @@ export default async function ProjectPage({ params }: Props) {
 
         {/* --- TAB: OVERVIEW --- */}
         <TabsContent value="overview" className="space-y-4 mt-6">
-           <Card>
-             <CardHeader><CardTitle>Project Details</CardTitle></CardHeader>
-             <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                   <div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Project Details */}
+            <div className="lg:col-span-2 space-y-4">
+              <Card>
+                <CardHeader><CardTitle>Project Details</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
                       <span className="text-sm text-muted-foreground">Initiated By</span>
                       <div className="flex items-center gap-2 mt-1">
-                         <Avatar className="h-6 w-6"><AvatarFallback>{getInitials(project.initiator?.full_name)}</AvatarFallback></Avatar>
-                         <span className="font-medium">{project.initiator?.full_name}</span>
+                        <Avatar className="h-6 w-6"><AvatarFallback>{getInitials(project.initiator?.full_name)}</AvatarFallback></Avatar>
+                        <span className="font-medium">{project.initiator?.full_name}</span>
                       </div>
-                   </div>
-                   <div>
+                    </div>
+                    <div>
                       <span className="text-sm text-muted-foreground">Mentor</span>
                       <div className="flex items-center gap-2 mt-1">
-                         {project.final_mentor ? (
-                            <span className="font-medium text-green-700">{project.final_mentor.full_name}</span>
-                         ) : (
-                            <span className="text-sm text-yellow-600">Not Assigned</span>
-                         )}
+                        {project.final_mentor ? (
+                          <span className="font-medium text-green-700">{project.final_mentor.full_name}</span>
+                        ) : (
+                          <span className="text-sm text-yellow-600">Not Assigned</span>
+                        )}
                       </div>
-                   </div>
-                </div>
-             </CardContent>
-           </Card>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-           {/* Task Progress Card */}
-           {taskStats.total > 0 && (
-             <Card>
-               <CardHeader>
-                 <CardTitle className="text-base">Task Progress</CardTitle>
-               </CardHeader>
-               <CardContent className="space-y-4">
-                 <div className="flex items-center justify-between text-sm">
-                   <span>{taskStats.completed} of {taskStats.total} tasks completed</span>
-                   <span className="font-medium">{Math.round((taskStats.completed / taskStats.total) * 100)}%</span>
-                 </div>
-                 <Progress value={(taskStats.completed / taskStats.total) * 100} className="h-2" />
-                 <div className="grid grid-cols-4 gap-2 text-center text-xs">
-                   <div className="p-2 rounded-md bg-slate-100 dark:bg-slate-800">
-                     <p className="font-semibold text-lg">{taskStats.todo}</p>
-                     <p className="text-muted-foreground">To Do</p>
-                   </div>
-                   <div className="p-2 rounded-md bg-blue-100 dark:bg-blue-900/30">
-                     <p className="font-semibold text-lg">{taskStats.in_progress}</p>
-                     <p className="text-muted-foreground">In Progress</p>
-                   </div>
-                   <div className="p-2 rounded-md bg-yellow-100 dark:bg-yellow-900/30">
-                     <p className="font-semibold text-lg">{taskStats.review}</p>
-                     <p className="text-muted-foreground">Review</p>
-                   </div>
-                   <div className="p-2 rounded-md bg-green-100 dark:bg-green-900/30">
-                     <p className="font-semibold text-lg">{taskStats.completed}</p>
-                     <p className="text-muted-foreground">Done</p>
-                   </div>
-                 </div>
-               </CardContent>
-             </Card>
-           )}
+              {/* Task Progress Card */}
+              {taskStats.total > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Task Progress</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>{taskStats.completed} of {taskStats.total} tasks completed</span>
+                      <span className="font-medium">{Math.round((taskStats.completed / taskStats.total) * 100)}%</span>
+                    </div>
+                    <Progress value={(taskStats.completed / taskStats.total) * 100} className="h-2" />
+                    <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                      <div className="p-2 rounded-md bg-slate-100 dark:bg-slate-800">
+                        <p className="font-semibold text-lg">{taskStats.todo}</p>
+                        <p className="text-muted-foreground">To Do</p>
+                      </div>
+                      <div className="p-2 rounded-md bg-blue-100 dark:bg-blue-900/30">
+                        <p className="font-semibold text-lg">{taskStats.in_progress}</p>
+                        <p className="text-muted-foreground">In Progress</p>
+                      </div>
+                      <div className="p-2 rounded-md bg-yellow-100 dark:bg-yellow-900/30">
+                        <p className="font-semibold text-lg">{taskStats.review}</p>
+                        <p className="text-muted-foreground">Review</p>
+                      </div>
+                      <div className="p-2 rounded-md bg-green-100 dark:bg-green-900/30">
+                        <p className="font-semibold text-lg">{taskStats.completed}</p>
+                        <p className="text-muted-foreground">Done</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Right Column - Progress Tracker */}
+            <div className="lg:col-span-1">
+              <ProgressTracker projectId={project.id} />
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* --- TAB: TIMELINE --- */}
+        <TabsContent value="timeline" className="mt-6">
+          <RealtimeTimeline 
+            projectId={project.id}
+            initialMilestones={milestones}
+            members={members.map((m: any) => ({
+              user_id: m.user_id,
+              profile: {
+                id: m.profile?.id || m.user_id,
+                full_name: m.profile?.full_name || 'Unknown',
+                avatar_url: m.profile?.avatar_url || null
+              }
+            }))}
+            canEdit={userRole.isOwner || userRole.isMember || userRole.isMentor}
+          />
         </TabsContent>
 
         {/* --- TAB: TASKS --- */}
         <TabsContent value="tasks" className="mt-6">
-          <TaskBoard 
+          <RealtimeTaskBoard 
             projectId={project.id}
-            tasks={tasks}
+            initialTasks={tasks}
             members={members.map((m: any) => ({
               user_id: m.user_id,
               profile: {

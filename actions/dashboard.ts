@@ -58,6 +58,137 @@ export async function getUserProjects() {
   }
 }
 
+// 2.5 Get Enhanced Student Dashboard Data
+export async function getStudentDashboardData() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) return { 
+    owned: [], 
+    member: [], 
+    stats: { total_projects: 0, tasks_pending: 0, tasks_completed: 0, upcoming_deadlines: 0 },
+    my_tasks: [],
+    upcoming_milestones: [],
+    recent_activity: []
+  }
+
+  // A. Projects I Created (Owner)
+  const { data: owned } = await supabase
+    .from('projects')
+    .select('*, initiator:profiles!initiator_id(full_name)')
+    .eq('initiator_id', user.id)
+    .order('created_at', { ascending: false })
+
+  // B. Projects I Joined (Member)
+  const { data: memberProjects } = await supabase
+    .from('project_members')
+    .select(`
+      project:projects(
+        *, 
+        initiator:profiles!initiator_id(full_name)
+      )
+    `) 
+    .eq('user_id', user.id)
+
+  const joined = memberProjects
+    ?.map((p: any) => p.project)
+    .filter((p: any) => p !== null) || []
+
+  // Get all project IDs user is involved in
+  const allProjectIds = [
+    ...(owned?.map(p => p.id) || []),
+    ...joined.map((p: any) => p.id)
+  ]
+
+  // C. My Tasks (assigned to me)
+  let myTasks: any[] = []
+  let taskStats = { pending: 0, completed: 0 }
+  
+  if (allProjectIds.length > 0) {
+    const { data: tasks } = await supabase
+      .from('tasks')
+      .select(`
+        *,
+        project:projects(id, title)
+      `)
+      .or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`)
+      .in('project_id', allProjectIds)
+      .order('due_date', { ascending: true })
+      .limit(10)
+
+    myTasks = tasks || []
+    
+    // Task stats
+    const { data: allTasks } = await supabase
+      .from('tasks')
+      .select('status')
+      .or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`)
+      .in('project_id', allProjectIds)
+
+    taskStats.pending = allTasks?.filter(t => t.status !== 'completed').length || 0
+    taskStats.completed = allTasks?.filter(t => t.status === 'completed').length || 0
+  }
+
+  // D. Upcoming Milestones (next 14 days)
+  let upcomingMilestones: any[] = []
+  if (allProjectIds.length > 0) {
+    const today = new Date().toISOString().split('T')[0]
+    const twoWeeksLater = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    
+    const { data: milestones } = await supabase
+      .from('milestones')
+      .select(`
+        *,
+        project:projects(id, title)
+      `)
+      .in('project_id', allProjectIds)
+      .neq('status', 'completed')
+      .gte('due_date', today)
+      .lte('due_date', twoWeeksLater)
+      .order('due_date', { ascending: true })
+      .limit(5)
+
+    upcomingMilestones = milestones || []
+  }
+
+  // E. Recent Activity (task completions, milestone updates)
+  let recentActivity: any[] = []
+  if (allProjectIds.length > 0) {
+    // Get recent milestone activities
+    const { data: activities } = await supabase
+      .from('milestone_activities')
+      .select(`
+        *,
+        milestone:milestones(title, project_id),
+        user_profile:profiles!milestone_activities_user_id_fkey(full_name, avatar_url)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    // Filter activities for user's projects
+    recentActivity = (activities || []).filter((a: any) => 
+      a.milestone && allProjectIds.includes(a.milestone.project_id)
+    ).slice(0, 5)
+  }
+
+  // F. Stats
+  const stats = {
+    total_projects: (owned?.length || 0) + joined.length,
+    tasks_pending: taskStats.pending,
+    tasks_completed: taskStats.completed,
+    upcoming_deadlines: upcomingMilestones.length
+  }
+
+  return {
+    owned: owned || [],
+    member: joined,
+    stats,
+    my_tasks: myTasks,
+    upcoming_milestones: upcomingMilestones,
+    recent_activity: recentActivity
+  }
+}
+
 // 3. Mentor Dashboard Data (UPDATED FOR NEW UI 🚀)
 export async function getMentorDashboardData() {
   const supabase = await createClient()
