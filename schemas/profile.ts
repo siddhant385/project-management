@@ -23,23 +23,12 @@ export const profileSchema = z.object({
   // Fix 1: Roll number bhi empty string aa sakta hai
   roll_number: optionalString,
 
-  // Fix 2: Admission Year handling
-  // Agar value exists kare to number mein convert kro, warna undefined rehne do
-  admission_year: z
-  .union([
-    z.coerce
-      .number()
-      .min(2015, "Year after 2015 is needed")
-      .max(new Date().getFullYear(), "Future Admission Year detected"),
-    z.literal(""),
-    z.undefined(),
-  ])
-  .optional()
-  .transform((val) => {
-    if (val === "" || val === undefined) return undefined;
-    return val;
-  }),
-
+  // Fix 2: Admission Year handling - simplified for proper type inference
+  admission_year: z.coerce
+    .number()
+    .min(2015, "Year after 2015 is needed")
+    .max(new Date().getFullYear(), "Future Admission Year detected")
+    .optional(),
 
   // Fix 3: Skills ko String hi rakho Form ke liye.
   // Server action me .split(',') kar lena.
