@@ -11,9 +11,9 @@ export default async function StudentDashboard() {
   const { owned, member } = await getUserProjects()
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="container max-w-6xl mx-auto py-8 px-4 space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Student Dashboard</h1>
           <p className="text-muted-foreground">Manage your academic projects</p>

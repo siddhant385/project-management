@@ -31,12 +31,21 @@ export async function updateSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Public routes that don't require authentication
+  const publicRoutes = [
+    '/auth',
+    '/login',
+    '/projects', // Browse projects
+    '/search',   // Search page
+    '/profile',  // View public profiles
+  ];
+
+  const isPublicRoute = publicRoutes.some(route => 
+    request.nextUrl.pathname.startsWith(route)
+  ) || request.nextUrl.pathname === '/';
+
   // 1. Agar user login nahi hai aur protected route par hai
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
-  ) {
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);

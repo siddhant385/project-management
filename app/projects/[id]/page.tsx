@@ -1,5 +1,5 @@
 import { getProjectDetails } from '@/actions/project-details'
-import { applyToProject, acceptApplication, getProjectReview, deleteProjectFile } from '@/actions/project'
+import { applyToProject, acceptApplication, getProjectReview, deleteProjectFile, removeMember, leaveProject } from '@/actions/project'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { FileText, Github, Download, Trash2 } from 'lucide-react'
+import Link from 'next/link'
 
 // Shadcn UI Imports
 import {
@@ -29,6 +30,11 @@ import { ReviewProjectDialog } from '@/components/project/review-project-dialog'
 import { RejectApplicationButton } from '@/components/project/reject-application-button'
 import { ProjectStatusSelect } from '@/components/project/project-status-select'
 
+// Task Components
+import { TaskBoard } from '@/components/tasks'
+import { getProjectTasks, getTaskStats } from '@/actions/tasks'
+import { Progress } from '@/components/ui/progress'
+
 // Next.js 15: Force dynamic rendering for authenticated routes
 export const dynamic = 'force-dynamic'
 
@@ -46,14 +52,18 @@ export default async function ProjectPage({ params }: Props) {
   // Ab 'id' use karo instead of 'params.id'
   const { project, members, files, applications, userRole } = await getProjectDetails(id)
   
+  // Get tasks for this project
+  const tasks = await getProjectTasks(id)
+  const taskStats = await getTaskStats(id)
+  
   // Get existing review if mentor
   const existingReview = userRole.isMentor ? await getProjectReview(id) : null;
 
   return (
-    <div className="container max-w-5xl py-10 space-y-8">
+    <div className="container max-w-5xl mx-auto py-10 px-4 space-y-8">
       
       {/* ================= HEADER SECTION ================= */}
-      <div className="flex flex-col md:flex-row justify-between gap-4">
+      <div className="flex flex-col lg:flex-row justify-between gap-6">
         <div className="space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
              <h1 className="text-3xl font-bold">{project.title}</h1>
@@ -78,14 +88,14 @@ export default async function ProjectPage({ params }: Props) {
         </div>
 
         {/* --- ACTION BUTTONS --- */}
-        <div className="flex flex-col gap-2 min-w-[160px]">
+        <div className="flex flex-col gap-2 w-full lg:w-auto lg:min-w-[180px] shrink-0">
            
            {/* OWNER ACTIONS */}
            {userRole.isOwner && (
-             <>
+             <div className="flex flex-col gap-2">
                <EditProjectDialog project={project} />
                <DeleteProjectButton projectId={project.id} projectTitle={project.title} />
-             </>
+             </div>
            )}
 
            {/* MENTOR ACTIONS */}
@@ -151,8 +161,9 @@ export default async function ProjectPage({ params }: Props) {
 
       {/* ================= TABS SECTION ================= */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:w-[400px]">
+        <TabsList className="w-full md:w-auto md:inline-flex">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="team">Team</TabsTrigger>
           <TabsTrigger value="files">Files</TabsTrigger>
           {userRole.isOwner && <TabsTrigger value="applications">Requests</TabsTrigger>}
@@ -184,27 +195,111 @@ export default async function ProjectPage({ params }: Props) {
                 </div>
              </CardContent>
            </Card>
+
+           {/* Task Progress Card */}
+           {taskStats.total > 0 && (
+             <Card>
+               <CardHeader>
+                 <CardTitle className="text-base">Task Progress</CardTitle>
+               </CardHeader>
+               <CardContent className="space-y-4">
+                 <div className="flex items-center justify-between text-sm">
+                   <span>{taskStats.completed} of {taskStats.total} tasks completed</span>
+                   <span className="font-medium">{Math.round((taskStats.completed / taskStats.total) * 100)}%</span>
+                 </div>
+                 <Progress value={(taskStats.completed / taskStats.total) * 100} className="h-2" />
+                 <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                   <div className="p-2 rounded-md bg-slate-100 dark:bg-slate-800">
+                     <p className="font-semibold text-lg">{taskStats.todo}</p>
+                     <p className="text-muted-foreground">To Do</p>
+                   </div>
+                   <div className="p-2 rounded-md bg-blue-100 dark:bg-blue-900/30">
+                     <p className="font-semibold text-lg">{taskStats.in_progress}</p>
+                     <p className="text-muted-foreground">In Progress</p>
+                   </div>
+                   <div className="p-2 rounded-md bg-yellow-100 dark:bg-yellow-900/30">
+                     <p className="font-semibold text-lg">{taskStats.review}</p>
+                     <p className="text-muted-foreground">Review</p>
+                   </div>
+                   <div className="p-2 rounded-md bg-green-100 dark:bg-green-900/30">
+                     <p className="font-semibold text-lg">{taskStats.completed}</p>
+                     <p className="text-muted-foreground">Done</p>
+                   </div>
+                 </div>
+               </CardContent>
+             </Card>
+           )}
+        </TabsContent>
+
+        {/* --- TAB: TASKS --- */}
+        <TabsContent value="tasks" className="mt-6">
+          <TaskBoard 
+            projectId={project.id}
+            tasks={tasks}
+            members={members.map((m: any) => ({
+              user_id: m.user_id,
+              profile: {
+                id: m.profile?.id || m.user_id,
+                full_name: m.profile?.full_name || 'Unknown',
+                avatar_url: m.profile?.avatar_url || null
+              }
+            }))}
+            canEdit={userRole.isOwner || userRole.isMember || userRole.isMentor}
+          />
         </TabsContent>
 
         {/* --- TAB: TEAM --- */}
         <TabsContent value="team" className="mt-6">
-          <div className="grid gap-4 md:grid-cols-2">
-             {members.map((m: any) => (
-                <Card key={m.id}>
-                   <CardContent className="p-4 flex items-center gap-4">
-                      <Avatar>
-                        <AvatarImage src={m.profile?.avatar_url} />
-                        <AvatarFallback>{getInitials(m.profile?.full_name)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                         <p className="font-medium">{m.profile?.full_name}</p>
-                         <p className="text-sm text-muted-foreground">{m.profile?.roll_number}</p>
-                      </div>
-                      {m.is_lead && <Badge className="ml-auto">Lead</Badge>}
-                   </CardContent>
-                </Card>
-             ))}
-          </div>
+          {members.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                No team members yet. Applications will appear in the Requests tab.
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+               {members.map((m: any) => (
+                  <Card key={m.id}>
+                     <CardContent className="p-4 flex items-center gap-4">
+                        <Link href={`/profile/${m.profile?.id}`}>
+                          <Avatar className="cursor-pointer hover:ring-2 hover:ring-primary transition-all">
+                            <AvatarImage src={m.profile?.avatar_url} />
+                            <AvatarFallback>{getInitials(m.profile?.full_name)}</AvatarFallback>
+                          </Avatar>
+                        </Link>
+                        <div className="flex-1">
+                           <Link href={`/profile/${m.profile?.id}`} className="hover:text-primary transition-colors">
+                             <p className="font-medium hover:underline">{m.profile?.full_name}</p>
+                           </Link>
+                           <p className="text-sm text-muted-foreground">{m.profile?.roll_number}</p>
+                        </div>
+                        {m.is_lead ? (
+                          <Badge className="ml-auto">Lead</Badge>
+                        ) : (
+                          userRole.isOwner && (
+                            <form action={removeMember.bind(null, m.id, project.id)}>
+                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </form>
+                          )
+                        )}
+                     </CardContent>
+                  </Card>
+               ))}
+            </div>
+          )}
+          
+          {/* Leave Project Button for non-owner members */}
+          {userRole.isMember && !userRole.isOwner && (
+            <div className="mt-4">
+              <form action={leaveProject.bind(null, project.id)}>
+                <Button variant="outline" className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground">
+                  Leave Project
+                </Button>
+              </form>
+            </div>
+          )}
         </TabsContent>
 
         {/* --- TAB: FILES --- */}

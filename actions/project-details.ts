@@ -23,7 +23,7 @@ export async function getProjectDetails(projectId: string) {
   // 2. Fetch Team Members
   const { data: members } = await supabase
     .from('project_members')
-    .select('*, profile:profiles(full_name, roll_number, avatar_url)')
+    .select('*, profile:profiles(id, full_name, roll_number, avatar_url)')
     .eq('project_id', projectId)
 
   // 3. Fetch Files

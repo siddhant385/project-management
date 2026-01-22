@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { UserNav } from "@/components/user-nav";
-import { LayoutDashboard, Rocket } from "lucide-react";
+import { LayoutDashboard, Rocket, Search } from "lucide-react";
 
 export default async function Navbar() {
   const supabase = await createClient();
@@ -51,10 +51,11 @@ export default async function Navbar() {
                 Dashboard
               </Link>
               <Link 
-                href="/projects" 
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                href="/search" 
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary flex items-center gap-1"
               >
-                Projects
+                <Search className="h-4 w-4" />
+                Search
               </Link>
             </div>
           )}

@@ -27,7 +27,7 @@ interface Notification {
   title: string;
   message: string;
   link: string | null;
-  read: boolean;
+  is_read: boolean;
   created_at: string;
 }
 
@@ -65,7 +65,7 @@ export function NotificationsDropdown() {
     try {
       const data = await getNotifications();
       setNotifications(data);
-      setUnreadCount(data.filter((n: Notification) => !n.read).length);
+      setUnreadCount(data.filter((n: Notification) => !n.is_read).length);
     } catch (error) {
       console.error("Failed to load notifications:", error);
     } finally {
@@ -83,10 +83,10 @@ export function NotificationsDropdown() {
   }
 
   async function handleNotificationClick(notification: Notification) {
-    if (!notification.read) {
+    if (!notification.is_read) {
       await markAsRead(notification.id);
       setNotifications(prev =>
-        prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
+        prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n)
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
     }
@@ -100,7 +100,7 @@ export function NotificationsDropdown() {
   async function handleMarkAllAsRead() {
     try {
       await markAllAsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       setUnreadCount(0);
       toast.success("All notifications marked as read");
     } catch (error) {
@@ -170,7 +170,7 @@ export function NotificationsDropdown() {
               <DropdownMenuItem
                 key={notification.id}
                 className={`flex items-start gap-3 p-3 cursor-pointer ${
-                  !notification.read ? "bg-muted/50" : ""
+                  !notification.is_read ? "bg-muted/50" : ""
                 }`}
                 onClick={() => handleNotificationClick(notification)}
               >
@@ -178,7 +178,7 @@ export function NotificationsDropdown() {
                   {getNotificationIcon(notification.type)}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm ${!notification.read ? "font-medium" : ""}`}>
+                  <p className={`text-sm ${!notification.is_read ? "font-medium" : ""}`}>
                     {notification.title}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
@@ -188,7 +188,7 @@ export function NotificationsDropdown() {
                     {timeAgo(notification.created_at)}
                   </p>
                 </div>
-                {!notification.read && (
+                {!notification.is_read && (
                   <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1" />
                 )}
               </DropdownMenuItem>

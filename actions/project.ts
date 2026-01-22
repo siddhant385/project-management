@@ -315,7 +315,10 @@ export async function uploadProjectFile(projectId: string, formData: FormData) {
       type: fileType // 'synopsis', 'report', 'presentation', 'other'
     })
 
-  if (dbError) throw new Error('Failed to save file record')
+  if (dbError) {
+    console.error('DB Error:', JSON.stringify(dbError, null, 2))
+    throw new Error(`Failed to save file record: ${dbError.message}`)
+  }
 
   revalidatePath(`/projects/${projectId}`)
 }

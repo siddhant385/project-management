@@ -12,10 +12,10 @@ export default async function MentorDashboard() {
   const { assigned_projects, pending_reviews, open_projects, stats } = await getMentorDashboardData()
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="container max-w-7xl mx-auto py-8 px-4 space-y-8">
       
       {/* 1. Header & Actions */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Mentor Dashboard</h1>
           <p className="text-muted-foreground">Manage your academic guidance and review progress</p>
@@ -110,9 +110,9 @@ export default async function MentorDashboard() {
               ) : (
                 <div className="space-y-4">
                   {assigned_projects.map((p) => (
-                    <div key={p.id} className="border rounded-lg p-4 hover:bg-slate-50 transition flex justify-between items-center">
+                    <div key={p.id} className="border rounded-lg p-4 hover:bg-muted/50 transition flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h3 className="font-bold text-lg">{p.title}</h3>
                           <Badge variant="secondary">{p.status.replace('_', ' ')}</Badge>
                         </div>

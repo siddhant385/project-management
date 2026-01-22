@@ -8,7 +8,7 @@ import Link from 'next/link'
 
 export default function CreateProjectPage() {
   return (
-    <div className="container max-w-2xl py-10">
+    <div className="container max-w-2xl mx-auto py-10 px-4">
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Create New Project</CardTitle>

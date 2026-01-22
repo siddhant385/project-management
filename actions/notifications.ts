@@ -36,7 +36,7 @@ export async function getUnreadCount(): Promise<number> {
     .from("notifications")
     .select("*", { count: "exact", head: true })
     .eq("user_id", user.id)
-    .eq("read", false);
+    .eq("is_read", false);
 
   if (error) {
     console.error("Error fetching unread count:", error);
@@ -55,7 +55,7 @@ export async function markAsRead(notificationId: string) {
 
   const { error } = await supabase
     .from("notifications")
-    .update({ read: true })
+    .update({ is_read: true })
     .eq("id", notificationId)
     .eq("user_id", user.id);
 
@@ -73,11 +73,14 @@ export async function markAllAsRead() {
 
   const { error } = await supabase
     .from("notifications")
-    .update({ read: true })
+    .update({ is_read: true })
     .eq("user_id", user.id)
-    .eq("read", false);
+    .eq("is_read", false);
 
-  if (error) throw new Error("Failed to mark all as read");
+  if (error) {
+    console.error("Mark all as read error:", error);
+    throw new Error(`Failed to mark all as read: ${error.message}`);
+  }
 
   revalidatePath("/");
 }
@@ -118,7 +121,7 @@ export async function createNotification(
       title,
       message,
       link,
-      read: false,
+      is_read: false,
     });
 
   if (error) {
