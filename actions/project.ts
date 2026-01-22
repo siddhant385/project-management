@@ -66,8 +66,8 @@ export async function applyToProject(projectId: string, formData: FormData) {
 
   if (error) {
     console.error('Application Error:', error)
-    // Agar duplicate application hai to handle kar sakte hain
-    return { error: error.message }
+    // Agar duplicate application hai to throw karo (form action must return void)
+    throw new Error(error.message)
   }
 
   revalidatePath(`/projects/${projectId}`)
