@@ -105,7 +105,7 @@ export async function createMilestone(data: {
     throw new Error("Failed to create milestone");
   }
 
-  revalidatePath(`/projects/${data.project_id}`);
+  // Note: revalidatePath removed - using realtime updates instead
 }
 
 // Update milestone
@@ -138,7 +138,7 @@ export async function updateMilestone(
     throw new Error("Failed to update milestone");
   }
 
-  revalidatePath(`/projects/${milestone.project_id}`);
+  // Note: revalidatePath removed - using realtime updates instead
 }
 
 // Update milestone progress
@@ -177,7 +177,7 @@ export async function updateMilestoneProgress(
     metadata: { progress },
   });
 
-  revalidatePath(`/projects/${milestone.project_id}`);
+  // Note: revalidatePath removed - using realtime updates instead
 }
 
 // Update milestone status
@@ -250,7 +250,7 @@ export async function updateMilestoneStatus(
     metadata: { old_status: milestone.status, new_status: status },
   });
 
-  revalidatePath(`/projects/${milestone.project?.id}`);
+  // Note: revalidatePath removed - using realtime updates instead
   return { success: true };
 }
 
@@ -276,7 +276,7 @@ export async function deleteMilestone(milestoneId: string) {
     throw new Error("Failed to delete milestone");
   }
 
-  revalidatePath(`/projects/${milestone.project_id}`);
+  // Note: revalidatePath removed - using realtime updates instead
 }
 
 // Get milestone activities

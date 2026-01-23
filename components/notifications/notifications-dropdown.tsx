@@ -165,35 +165,50 @@ export function NotificationsDropdown() {
             No notifications yet
           </div>
         ) : (
-          <div className="max-h-[400px] overflow-y-auto">
-            {notifications.slice(0, 10).map((notification) => (
-              <DropdownMenuItem
-                key={notification.id}
-                className={`flex items-start gap-3 p-3 cursor-pointer ${
-                  !notification.is_read ? "bg-muted/50" : ""
-                }`}
-                onClick={() => handleNotificationClick(notification)}
-              >
-                <span className="text-xl flex-shrink-0">
-                  {getNotificationIcon(notification.type)}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm ${!notification.is_read ? "font-medium" : ""}`}>
-                    {notification.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {notification.message}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {timeAgo(notification.created_at)}
+          <>
+            {/* Scrollable notifications list */}
+            <div className="max-h-[350px] overflow-y-auto scrollbar-thin">
+              {notifications.slice(0, 20).map((notification) => (
+                <DropdownMenuItem
+                  key={notification.id}
+                  className={`flex items-start gap-3 p-3 cursor-pointer border-b border-border/50 last:border-0 ${
+                    !notification.is_read ? "bg-primary/5" : ""
+                  }`}
+                  onClick={() => handleNotificationClick(notification)}
+                >
+                  <span className="text-lg flex-shrink-0 mt-0.5">
+                    {getNotificationIcon(notification.type)}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm leading-tight ${!notification.is_read ? "font-semibold" : ""}`}>
+                      {notification.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                      {notification.message}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {timeAgo(notification.created_at)}
+                    </p>
+                  </div>
+                  {!notification.is_read && (
+                    <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1.5 animate-pulse" />
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </div>
+            
+            {/* Footer with count */}
+            {notifications.length > 20 && (
+              <>
+                <DropdownMenuSeparator />
+                <div className="p-2 text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Showing 20 of {notifications.length} notifications
                   </p>
                 </div>
-                {!notification.is_read && (
-                  <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1" />
-                )}
-              </DropdownMenuItem>
-            ))}
-          </div>
+              </>
+            )}
+          </>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

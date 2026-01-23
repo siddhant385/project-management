@@ -1,5 +1,5 @@
 import { getProjectDetails } from '@/actions/project-details'
-import { applyToProject, acceptApplication, getProjectReview, deleteProjectFile, removeMember, leaveProject } from '@/actions/project'
+import { acceptApplication, getProjectReview, deleteProjectFile, removeMember, leaveProject } from '@/actions/project'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -28,6 +28,7 @@ import { DeleteProjectButton } from '@/components/project/delete-project-button'
 import { FileUploadDialog } from '@/components/project/file-upload-dialog'
 import { ReviewProjectDialog } from '@/components/project/review-project-dialog'
 import { RejectApplicationButton } from '@/components/project/reject-application-button'
+import { ApplyButton } from '@/components/project/apply-button'
 import { ProjectStatusSelect } from '@/components/project/project-status-select'
 
 // Task Components - Using Realtime version
@@ -116,36 +117,7 @@ export default async function ProjectPage({ params }: Props) {
 
            {/* VISITOR ACTIONS (Apply Logic) */}
            {!userRole.isOwner && !userRole.isMember && !userRole.hasApplied && project.status === 'open' && (
-             <Dialog>
-               <DialogTrigger asChild>
-                 <Button className="w-full">Apply to Join</Button>
-               </DialogTrigger>
-               <DialogContent>
-                 <DialogHeader>
-                   <DialogTitle>Join Project Team</DialogTitle>
-                   <DialogDescription>
-                     Tell the project lead why you are a good fit for {project.title}.
-                   </DialogDescription>
-                 </DialogHeader>
-                 
-                 <form action={applyToProject.bind(null, project.id)}>
-                   <div className="grid gap-4 py-4">
-                     <div className="grid gap-2">
-                       <Label htmlFor="message">Message</Label>
-                       <Textarea 
-                         id="message" 
-                         name="message" 
-                         placeholder="I have experience with React and I am interested in..." 
-                         required
-                       />
-                     </div>
-                   </div>
-                   <DialogFooter>
-                     <Button type="submit">Submit Application</Button>
-                   </DialogFooter>
-                 </form>
-               </DialogContent>
-             </Dialog>
+             <ApplyButton projectId={project.id} projectTitle={project.title} />
            )}
 
            {/* PENDING STATE */}

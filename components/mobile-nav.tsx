@@ -9,10 +9,8 @@ import {
   X, 
   LayoutDashboard, 
   Rocket, 
-  Search, 
   User as UserIcon, 
   LogOut,
-  Settings,
   Home
 } from "lucide-react";
 import { signOut } from "@/actions/auth/auth";
@@ -59,11 +57,9 @@ export function MobileNav({ user, profile, dashboardUrl }: MobileNavProps) {
       ? { href: "/", label: "Home", icon: Home }
       : { href: dashboardUrl, label: "Dashboard", icon: LayoutDashboard },
     { href: "/projects", label: "Projects", icon: Rocket },
-    { href: "/search", label: "Search", icon: Search },
     { href: "/profile", label: "My Profile", icon: UserIcon },
   ] : [
     { href: "/", label: "Home", icon: Home },
-    { href: "/projects", label: "Browse Projects", icon: Rocket },
   ];
 
   return (

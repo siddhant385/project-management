@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { User } from "@supabase/supabase-js";
-import { LayoutDashboard, Rocket, Search, Home } from "lucide-react";
+import { LayoutDashboard, Rocket, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NavLinksProps {
@@ -21,13 +21,9 @@ export function NavLinks({ user, dashboardUrl }: NavLinksProps) {
                       pathname === "/mentor" || 
                       pathname === "/admin";
 
+  // Not logged in - don't show nav links (homepage has everything)
   if (!user) {
-    // Not logged in - show Browse Projects link
-    return (
-      <div className="hidden md:flex items-center gap-1">
-        <NavLink href="/projects" icon={Rocket} label="Browse Projects" isActive={pathname === "/projects"} />
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -42,7 +38,6 @@ export function NavLinks({ user, dashboardUrl }: NavLinksProps) {
       )}
       
       <NavLink href="/projects" icon={Rocket} label="Projects" isActive={pathname === "/projects" || pathname.startsWith("/projects/")} />
-      <NavLink href="/search" icon={Search} label="Search" isActive={pathname === "/search"} />
     </div>
   );
 }

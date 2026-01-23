@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { User } from "@supabase/supabase-js";
-import { LogOut, User as UserIcon, LayoutDashboard, Settings } from "lucide-react";
+import { LogOut, User as UserIcon, LayoutDashboard } from "lucide-react";
 import { signOut } from "@/actions/auth/auth";
 import { ThemeSwitcher } from "./theme-switcher";
 import { NotificationsDropdown } from "./notifications/notifications-dropdown";
@@ -72,14 +72,6 @@ export function UserNav({ user, profile, dashboardUrl }: UserNavProps) {
                   <Link href="/profile" className="cursor-pointer flex items-center">
                     <UserIcon className="mr-2 h-4 w-4" />
                     <span>My Profile</span>
-                  </Link>
-                </DropdownMenuItem>
-
-                 {/* Optional: Settings Link */}
-                <DropdownMenuItem asChild>
-                  <Link href="/settings" className="cursor-pointer flex items-center">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
                   </Link>
                 </DropdownMenuItem>
             </DropdownMenuGroup>

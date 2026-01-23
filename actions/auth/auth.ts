@@ -10,14 +10,29 @@ export async function login(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { error, data } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
   if (error) return { error: error.message };
   
-  return redirect("/");
+  // Get user's role for proper redirect
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, onboarding_completed")
+    .eq("id", data.user.id)
+    .single();
+  
+  // Redirect based on role and onboarding status
+  if (profile) {
+    if (!profile.onboarding_completed) {
+      return redirect(`/${profile.role}/onboarding`);
+    }
+    return redirect(`/${profile.role}`);
+  }
+  
+  return redirect("/student");
 }
 
 // 2. SIGNUP
