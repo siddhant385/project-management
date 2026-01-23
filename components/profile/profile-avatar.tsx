@@ -2,7 +2,7 @@
 
 import { FileUpload } from "@/components/file-upload";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { Badge } from "@/components/ui/badge";
 
 interface ProfileAvatarProps {
@@ -26,12 +26,13 @@ export const ProfileAvatar = ({
     <Card className="max-w-xl mx-auto">
       <CardContent className="pt-6 text-center space-y-6">
         <div className="mx-auto flex flex-col items-center gap-4">
-          <Avatar className="w-32 h-32 border-4 border-white shadow-lg">
-            <AvatarImage src={avatarUrl || ""} className="object-cover" />
-            <AvatarFallback className="text-4xl bg-muted">
-              {fullName?.[0] || "U"}
-            </AvatarFallback>
-          </Avatar>
+          <UserAvatar 
+            src={avatarUrl}
+            name={fullName}
+            size="2xl"
+            showBorder
+            className="h-32 w-32 shadow-lg"
+          />
 
           {isEditing && (
             <div className="scale-90">

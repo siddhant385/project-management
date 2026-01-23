@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
@@ -395,14 +395,11 @@ export function MilestoneDetailDialog({
                     Assigned To
                   </label>
                   <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage
-                        src={milestone.assignee.avatar_url || undefined}
-                      />
-                      <AvatarFallback className="text-[10px]">
-                        {getInitials(milestone.assignee.full_name)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      src={milestone.assignee.avatar_url}
+                      name={milestone.assignee.full_name}
+                      size="xs"
+                    />
                     <span className="text-sm">
                       {milestone.assignee.full_name}
                     </span>
@@ -437,14 +434,11 @@ export function MilestoneDetailDialog({
                 ) : (
                   activities.map((activity) => (
                     <div key={activity.id} className="flex gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage
-                          src={activity.user_profile.avatar_url || undefined}
-                        />
-                        <AvatarFallback className="text-[10px]">
-                          {getInitials(activity.user_profile.full_name)}
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar
+                        src={activity.user_profile.avatar_url}
+                        name={activity.user_profile.full_name}
+                        size="sm"
+                      />
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           {activityIcons[activity.activity_type] || (

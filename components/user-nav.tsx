@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 interface UserNavProps {
   user: User | null;
@@ -28,7 +28,6 @@ interface UserNavProps {
 export function UserNav({ user, profile, dashboardUrl }: UserNavProps) {
   
   const displayName = profile?.full_name || user?.email || "User";
-  const initial = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="flex items-center gap-2">
@@ -39,11 +38,13 @@ export function UserNav({ user, profile, dashboardUrl }: UserNavProps) {
           <NotificationsDropdown />
           <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-              <Avatar className="h-9 w-9 border">
-                <AvatarImage src={profile?.avatar_url} alt={displayName} className="object-cover" />
-                <AvatarFallback>{initial}</AvatarFallback>
-              </Avatar>
+            <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
+              <UserAvatar 
+                src={profile?.avatar_url} 
+                name={displayName}
+                size="sm"
+                showBorder
+              />
             </Button>
           </DropdownMenuTrigger>
           

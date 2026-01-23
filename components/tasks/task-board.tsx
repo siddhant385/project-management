@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Task, TaskStatus, TaskPriority, updateTaskStatus, deleteTask } from "@/actions/tasks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { Button } from "@/components/ui/button";
 import { 
   MoreHorizontal, 
@@ -211,12 +211,11 @@ export function TaskBoard({ projectId, tasks, members, canEdit }: TaskBoardProps
                     <div className="flex items-center justify-between pt-1">
                       {task.assignee ? (
                         <div className="flex items-center gap-1">
-                          <Avatar className="h-5 w-5">
-                            <AvatarImage src={task.assignee.avatar_url || undefined} />
-                            <AvatarFallback className="text-[8px]">
-                              {getInitials(task.assignee.full_name)}
-                            </AvatarFallback>
-                          </Avatar>
+                          <UserAvatar 
+                            src={task.assignee.avatar_url} 
+                            name={task.assignee.full_name}
+                            size="xs"
+                          />
                           <span className="text-xs text-muted-foreground truncate max-w-[80px]">
                             {task.assignee.full_name.split(" ")[0]}
                           </span>

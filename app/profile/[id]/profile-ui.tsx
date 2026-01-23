@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,12 +67,12 @@ export default function ProfileUI({
           <div className="relative flex flex-col md:flex-row items-start md:items-end -mt-16 gap-6">
             
             {/* Avatar */}
-            <Avatar className="w-32 h-32 md:w-40 md:h-40 border-4 border-background shadow-xl rounded-2xl">
-              <AvatarImage src={profile.avatar_url} className="object-cover" />
-              <AvatarFallback className="text-5xl bg-zinc-100 text-zinc-500 rounded-2xl">
-                {profile.full_name?.[0]}
-              </AvatarFallback>
-            </Avatar>
+            <UserAvatar 
+              src={profile.avatar_url}
+              name={profile.full_name}
+              className="w-32 h-32 md:w-40 md:h-40 border-4 border-background shadow-xl rounded-2xl"
+              showBorder
+            />
 
             {/* Name & Role */}
             <div className="flex-1 space-y-2 mb-2">

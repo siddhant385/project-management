@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -380,12 +380,11 @@ function ProjectsGrid({ projects }: { projects: any[] }) {
             {/* Project Info */}
             <div className="space-y-2 text-sm text-muted-foreground">
               <Link href={`/profile/${project.initiator?.id}`} className="flex items-center gap-2 hover:text-primary transition-colors">
-                <Avatar className="h-5 w-5">
-                  <AvatarImage src={project.initiator?.avatar_url} />
-                  <AvatarFallback className="text-[10px]">
-                    {getInitials(project.initiator?.full_name)}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar 
+                  src={project.initiator?.avatar_url} 
+                  name={project.initiator?.full_name}
+                  size="xs"
+                />
                 <span className="truncate hover:underline">{project.initiator?.full_name}</span>
               </Link>
               
@@ -437,12 +436,12 @@ function MentorsGrid({ mentors }: { mentors: any[] }) {
         <Card key={mentor.id} className="hover:shadow-lg transition-shadow">
           <CardHeader className="text-center">
             <Link href={`/profile/${mentor.id}`}>
-              <Avatar className="h-20 w-20 mx-auto mb-4 cursor-pointer hover:ring-2 hover:ring-primary transition-all">
-                <AvatarImage src={mentor.avatar_url} />
-                <AvatarFallback className="text-xl">
-                  {getInitials(mentor.full_name)}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar 
+                src={mentor.avatar_url} 
+                name={mentor.full_name}
+                size="xl"
+                className="mx-auto mb-4 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+              />
             </Link>
             <Link href={`/profile/${mentor.id}`}>
               <CardTitle className="hover:text-primary transition-colors cursor-pointer">
@@ -522,12 +521,12 @@ function StudentsGrid({ students }: { students: any[] }) {
         <Card key={student.id} className="hover:shadow-lg transition-shadow">
           <CardHeader className="text-center">
             <Link href={`/profile/${student.id}`}>
-              <Avatar className="h-20 w-20 mx-auto mb-4 cursor-pointer hover:ring-2 hover:ring-primary transition-all">
-                <AvatarImage src={student.avatar_url} />
-                <AvatarFallback className="text-xl">
-                  {getInitials(student.full_name)}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar 
+                src={student.avatar_url} 
+                name={student.full_name}
+                size="xl"
+                className="mx-auto mb-4 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+              />
             </Link>
             <Link href={`/profile/${student.id}`}>
               <CardTitle className="hover:text-primary transition-colors cursor-pointer">

@@ -9,7 +9,7 @@ import {
 } from "@/actions/milestones";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -330,14 +330,11 @@ export function ProjectTimeline({
                       {milestone.assignee && (
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-muted-foreground" />
-                          <Avatar className="h-5 w-5">
-                            <AvatarImage
-                              src={milestone.assignee.avatar_url || undefined}
-                            />
-                            <AvatarFallback className="text-[8px]">
-                              {getInitials(milestone.assignee.full_name)}
-                            </AvatarFallback>
-                          </Avatar>
+                          <UserAvatar
+                            src={milestone.assignee.avatar_url}
+                            name={milestone.assignee.full_name}
+                            size="xs"
+                          />
                           <span className="text-sm text-muted-foreground">
                             {milestone.assignee.full_name}
                           </span>

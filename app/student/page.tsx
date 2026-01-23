@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { 
   Plus, 
   FolderGit2, 
@@ -340,12 +340,11 @@ export default async function StudentDashboard() {
                 <div className="space-y-4">
                   {recent_activity.map((activity: any) => (
                     <div key={activity.id} className="flex gap-3">
-                      <Avatar className="h-7 w-7">
-                        <AvatarImage src={activity.user_profile?.avatar_url} />
-                        <AvatarFallback className="text-[10px]">
-                          {getInitials(activity.user_profile?.full_name)}
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar 
+                        src={activity.user_profile?.avatar_url} 
+                        name={activity.user_profile?.full_name}
+                        size="xs"
+                      />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm">
                           <span className="font-medium">{activity.user_profile?.full_name}</span>

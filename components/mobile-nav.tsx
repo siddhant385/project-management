@@ -19,7 +19,7 @@ import { NotificationsDropdown } from "./notifications/notifications-dropdown";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import {
   Sheet,
   SheetContent,
@@ -95,10 +95,12 @@ export function MobileNav({ user, profile, dashboardUrl }: MobileNavProps) {
               <div className="p-4 border-b border-white/10 bg-gradient-to-br from-primary/5 via-transparent to-primary/5">
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <Avatar className="h-12 w-12 border-2 border-primary/30 shadow-lg">
-                      <AvatarImage src={profile?.avatar_url} alt={displayName} className="object-cover" />
-                      <AvatarFallback className="text-lg bg-primary/10">{initial}</AvatarFallback>
-                    </Avatar>
+                    <UserAvatar 
+                      src={profile?.avatar_url} 
+                      name={displayName}
+                      size="lg"
+                      showBorder
+                    />
                     {/* Online indicator */}
                     <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
                   </div>

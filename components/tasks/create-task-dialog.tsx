@@ -24,7 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { Plus, Calendar } from "lucide-react";
 
 const getInitials = (name: string) => name?.substring(0, 2).toUpperCase() || "U";
@@ -211,12 +211,11 @@ export function CreateTaskDialog({
               {members.map((member) => (
                 <SelectItem key={member.user_id} value={member.user_id}>
                   <div className="flex items-center gap-2">
-                    <Avatar className="h-5 w-5">
-                      <AvatarImage src={member.profile.avatar_url || undefined} />
-                      <AvatarFallback className="text-[8px]">
-                        {getInitials(member.profile.full_name)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar 
+                      src={member.profile.avatar_url} 
+                      name={member.profile.full_name}
+                      size="xs"
+                    />
                     {member.profile.full_name}
                   </div>
                 </SelectItem>

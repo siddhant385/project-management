@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { Separator } from "@/components/ui/separator";
 import { 
   Calendar, 
@@ -251,12 +251,11 @@ export function TaskDetailDialog({
                     {members.map((member) => (
                       <SelectItem key={member.user_id} value={member.user_id}>
                         <div className="flex items-center gap-2">
-                          <Avatar className="h-5 w-5">
-                            <AvatarImage src={member.profile.avatar_url || undefined} />
-                            <AvatarFallback className="text-[8px]">
-                              {getInitials(member.profile.full_name)}
-                            </AvatarFallback>
-                          </Avatar>
+                          <UserAvatar 
+                            src={member.profile.avatar_url} 
+                            name={member.profile.full_name}
+                            size="xs"
+                          />
                           {member.profile.full_name}
                         </div>
                       </SelectItem>
@@ -265,12 +264,11 @@ export function TaskDetailDialog({
                 </Select>
               ) : currentTask.assignee ? (
                 <div className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src={currentTask.assignee.avatar_url || undefined} />
-                    <AvatarFallback className="text-[10px]">
-                      {getInitials(currentTask.assignee.full_name)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserAvatar 
+                    src={currentTask.assignee.avatar_url} 
+                    name={currentTask.assignee.full_name}
+                    size="xs"
+                  />
                   <span className="text-sm">{currentTask.assignee.full_name}</span>
                 </div>
               ) : (

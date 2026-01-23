@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { 
   Rocket, 
   Users, 
@@ -66,7 +66,7 @@ export default async function Home() {
             </h1>
             
             <p className="text-base sm:text-lg text-muted-foreground max-w-xl mb-8 text-balance">
-              JEC ka platform jahan students real-world projects banate hain faculty guidance ke saath. 
+              JEC 's own platform to help students build real-world projects with faculty mentorship.
               Structured milestones, team collaboration, aur progress tracking - sab ek jagah.
             </p>
             
@@ -373,12 +373,11 @@ function ProjectCard({
           
           {/* Author */}
           <div className="flex items-center gap-2 pt-3 border-t">
-            <Avatar className="h-5 w-5">
-              <AvatarImage src={initiator?.avatar_url} />
-              <AvatarFallback className="text-[10px]">
-                {initiator?.full_name?.charAt(0) || 'U'}
-              </AvatarFallback>
-            </Avatar>
+            <UserAvatar 
+              src={initiator?.avatar_url} 
+              name={initiator?.full_name || 'Unknown'}
+              size="xs"
+            />
             <span className="text-xs text-muted-foreground truncate">
               {initiator?.full_name || 'Unknown'}
             </span>

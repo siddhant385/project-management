@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { Separator } from '@/components/ui/separator'
 import { FileText, Github, Download, Trash2 } from 'lucide-react'
 import Link from 'next/link'
@@ -161,7 +161,11 @@ export default async function ProjectPage({ params }: Props) {
                     <div>
                       <span className="text-sm text-muted-foreground">Initiated By</span>
                       <div className="flex items-center gap-2 mt-1">
-                        <Avatar className="h-6 w-6"><AvatarFallback>{getInitials(project.initiator?.full_name)}</AvatarFallback></Avatar>
+                        <UserAvatar 
+                          src={project.initiator?.avatar_url} 
+                          name={project.initiator?.full_name}
+                          size="xs"
+                        />
                         <span className="font-medium">{project.initiator?.full_name}</span>
                       </div>
                     </div>
@@ -269,10 +273,12 @@ export default async function ProjectPage({ params }: Props) {
                   <Card key={m.id}>
                      <CardContent className="p-4 flex items-center gap-4">
                         <Link href={`/profile/${m.profile?.id}`}>
-                          <Avatar className="cursor-pointer hover:ring-2 hover:ring-primary transition-all">
-                            <AvatarImage src={m.profile?.avatar_url} />
-                            <AvatarFallback>{getInitials(m.profile?.full_name)}</AvatarFallback>
-                          </Avatar>
+                          <UserAvatar 
+                            src={m.profile?.avatar_url} 
+                            name={m.profile?.full_name}
+                            size="md"
+                            className="cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+                          />
                         </Link>
                         <div className="flex-1">
                            <Link href={`/profile/${m.profile?.id}`} className="hover:text-primary transition-colors">

@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
@@ -66,12 +66,11 @@ function ProjectCard({
       
       <div className="flex items-center gap-4 mt-3">
         <div className="flex items-center gap-2">
-          <Avatar className="h-7 w-7 border">
-            <AvatarImage src={initiator?.avatar_url} />
-            <AvatarFallback className="text-xs">
-              {initiator?.full_name?.charAt(0)}
-            </AvatarFallback>
-          </Avatar>
+          <UserAvatar 
+            src={initiator?.avatar_url} 
+            name={initiator?.full_name}
+            size="xs"
+          />
           <span className="text-sm text-muted-foreground">
             {initiator?.full_name}
           </span>
@@ -323,12 +322,12 @@ export default async function MentorDashboard() {
                       }`}
                     >
                       <div className="flex items-center gap-4">
-                        <Avatar className="h-12 w-12 border-2 border-orange-200">
-                          <AvatarImage src={req.applicant?.avatar_url} />
-                          <AvatarFallback className="bg-orange-100 text-orange-600">
-                            {req.applicant?.full_name?.charAt(0) || 'S'}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar 
+                          src={req.applicant?.avatar_url} 
+                          name={req.applicant?.full_name}
+                          size="lg"
+                          showBorder
+                        />
                         <div>
                           <h4 className="font-semibold">{req.applicant?.full_name}</h4>
                           <p className="text-sm text-muted-foreground">
@@ -460,12 +459,11 @@ export default async function MentorDashboard() {
                   <div className="space-y-4">
                     {recentActivity.map((activity: any) => (
                       <div key={activity.id} className="flex items-start gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={activity.user?.avatar_url} />
-                          <AvatarFallback className="text-xs">
-                            {activity.user?.full_name?.charAt(0) || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar 
+                          src={activity.user?.avatar_url} 
+                          name={activity.user?.full_name}
+                          size="sm"
+                        />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm">
                             <span className="font-medium">{activity.user?.full_name}</span>
@@ -587,12 +585,11 @@ export default async function MentorDashboard() {
                         className="block p-3 rounded-lg border bg-background hover:border-primary/50 hover:bg-primary/5 transition-all"
                       >
                         <div className="flex items-center gap-3">
-                          <Avatar className="h-9 w-9">
-                            <AvatarImage src={project.initiator?.avatar_url} />
-                            <AvatarFallback className="text-xs">
-                              {project.initiator?.full_name?.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
+                          <UserAvatar 
+                            src={project.initiator?.avatar_url} 
+                            name={project.initiator?.full_name}
+                            size="sm"
+                          />
                           <div className="flex-1 min-w-0">
                             <h4 className="font-medium text-sm truncate">
                               {project.title}
