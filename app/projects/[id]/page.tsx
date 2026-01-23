@@ -68,42 +68,43 @@ export default async function ProjectPage({ params }: Props) {
   const existingReview = userRole.isMentor ? await getProjectReview(id) : null;
 
   return (
-    <div className="container max-w-5xl mx-auto py-10 px-4 space-y-8">
+    <div className="container max-w-5xl mx-auto py-6 md:py-10 px-4 space-y-6 md:space-y-8">
       
       {/* ================= HEADER SECTION ================= */}
-      <div className="flex flex-col lg:flex-row justify-between gap-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 flex-wrap">
-             <h1 className="text-3xl font-bold">{project.title}</h1>
+      <div className="space-y-4">
+        {/* Title & Status */}
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+             <h1 className="text-2xl md:text-3xl font-bold">{project.title}</h1>
              {userRole.isOwner ? (
                <ProjectStatusSelect 
                  projectId={project.id} 
                  currentStatus={project.status} 
                />
              ) : (
-               <Badge variant={project.status === 'open' ? 'default' : 'secondary'}>
+               <Badge variant={project.status === 'open' ? 'default' : 'secondary'} className="w-fit">
                  {project.status.toUpperCase().replace('_', ' ')}
                </Badge>
              )}
           </div>
-          <p className="text-muted-foreground max-w-2xl">{project.description}</p>
+          <p className="text-muted-foreground text-sm md:text-base">{project.description}</p>
           
-          <div className="flex gap-2 mt-2 flex-wrap">
+          <div className="flex gap-1.5 md:gap-2 flex-wrap">
              {project.tags?.map((tag: string) => (
-               <Badge key={tag} variant="outline">{tag}</Badge>
+               <Badge key={tag} variant="outline" className="text-xs md:text-sm">{tag}</Badge>
              ))}
           </div>
         </div>
 
         {/* --- ACTION BUTTONS --- */}
-        <div className="flex flex-col gap-2 w-full lg:w-auto lg:min-w-[180px] shrink-0">
+        <div className="flex flex-wrap gap-2">
            
            {/* OWNER ACTIONS */}
            {userRole.isOwner && (
-             <div className="flex flex-col gap-2">
+             <>
                <EditProjectDialog project={project} />
                <DeleteProjectButton projectId={project.id} projectTitle={project.title} />
-             </div>
+             </>
            )}
 
            {/* MENTOR ACTIONS */}
@@ -122,14 +123,14 @@ export default async function ProjectPage({ params }: Props) {
 
            {/* PENDING STATE */}
            {userRole.hasApplied && userRole.applicationStatus === 'pending' && (
-             <Button disabled variant="secondary" className="w-full">Application Pending</Button>
+             <Button disabled variant="secondary" size="sm">Application Pending</Button>
            )}
            
            {/* GITHUB LINK */}
            {project.github_link && (
-             <Button variant="ghost" className="w-full justify-start" asChild>
+             <Button variant="outline" size="sm" asChild>
                <a href={project.github_link} target="_blank" rel="noopener noreferrer">
-                 <Github className="mr-2 h-4 w-4" /> View Repo
+                 <Github className="mr-2 h-4 w-4" /> GitHub
                </a>
              </Button>
            )}
@@ -140,13 +141,13 @@ export default async function ProjectPage({ params }: Props) {
 
       {/* ================= TABS SECTION ================= */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="w-full md:w-auto md:inline-flex">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          <TabsTrigger value="tasks">Tasks</TabsTrigger>
-          <TabsTrigger value="team">Team</TabsTrigger>
-          <TabsTrigger value="files">Files</TabsTrigger>
-          {userRole.isOwner && <TabsTrigger value="applications">Requests</TabsTrigger>}
+        <TabsList className="w-full h-auto flex-wrap justify-start gap-1 bg-muted/50 p-1">
+          <TabsTrigger value="overview" className="text-xs md:text-sm">Overview</TabsTrigger>
+          <TabsTrigger value="timeline" className="text-xs md:text-sm">Timeline</TabsTrigger>
+          <TabsTrigger value="tasks" className="text-xs md:text-sm">Tasks</TabsTrigger>
+          <TabsTrigger value="team" className="text-xs md:text-sm">Team</TabsTrigger>
+          <TabsTrigger value="files" className="text-xs md:text-sm">Files</TabsTrigger>
+          {userRole.isOwner && <TabsTrigger value="applications" className="text-xs md:text-sm">Requests</TabsTrigger>}
         </TabsList>
 
         {/* --- TAB: OVERVIEW --- */}
@@ -195,22 +196,22 @@ export default async function ProjectPage({ params }: Props) {
                       <span className="font-medium">{Math.round((taskStats.completed / taskStats.total) * 100)}%</span>
                     </div>
                     <Progress value={(taskStats.completed / taskStats.total) * 100} className="h-2" />
-                    <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
                       <div className="p-2 rounded-md bg-slate-100 dark:bg-slate-800">
-                        <p className="font-semibold text-lg">{taskStats.todo}</p>
-                        <p className="text-muted-foreground">To Do</p>
+                        <p className="font-semibold text-base md:text-lg">{taskStats.todo}</p>
+                        <p className="text-muted-foreground text-[10px] md:text-xs">To Do</p>
                       </div>
                       <div className="p-2 rounded-md bg-blue-100 dark:bg-blue-900/30">
-                        <p className="font-semibold text-lg">{taskStats.in_progress}</p>
-                        <p className="text-muted-foreground">In Progress</p>
+                        <p className="font-semibold text-base md:text-lg">{taskStats.in_progress}</p>
+                        <p className="text-muted-foreground text-[10px] md:text-xs">In Progress</p>
                       </div>
                       <div className="p-2 rounded-md bg-yellow-100 dark:bg-yellow-900/30">
-                        <p className="font-semibold text-lg">{taskStats.review}</p>
-                        <p className="text-muted-foreground">Review</p>
+                        <p className="font-semibold text-base md:text-lg">{taskStats.review}</p>
+                        <p className="text-muted-foreground text-[10px] md:text-xs">Review</p>
                       </div>
                       <div className="p-2 rounded-md bg-green-100 dark:bg-green-900/30">
-                        <p className="font-semibold text-lg">{taskStats.completed}</p>
-                        <p className="text-muted-foreground">Done</p>
+                        <p className="font-semibold text-base md:text-lg">{taskStats.completed}</p>
+                        <p className="text-muted-foreground text-[10px] md:text-xs">Done</p>
                       </div>
                     </div>
                   </CardContent>

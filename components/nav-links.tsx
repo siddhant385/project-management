@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { User } from "@supabase/supabase-js";
-import { LayoutDashboard, Rocket, Home } from "lucide-react";
+import { LayoutDashboard, Rocket, Home, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NavLinksProps {
@@ -14,74 +14,70 @@ interface NavLinksProps {
 export function NavLinks({ user, dashboardUrl }: NavLinksProps) {
   const pathname = usePathname();
   
-  // Check if we're on home or dashboard
-  const isHome = pathname === "/";
   const isDashboard = pathname === dashboardUrl || 
                       pathname === "/student" || 
                       pathname === "/mentor" || 
                       pathname === "/admin";
 
-  // Not logged in - don't show nav links (homepage has everything)
+  // Not logged in - don't show nav links
   if (!user) {
     return null;
   }
 
   return (
-    <div className="hidden md:flex items-center gap-1">
-      {/* Conditional Home/Dashboard Link */}
+    <div className="hidden md:flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
+      {/* Home/Dashboard Toggle */}
       {isDashboard ? (
-        // On Dashboard → Show Home
         <NavLink href="/" icon={Home} label="Home" isActive={false} />
       ) : (
-        // On Home or Other → Show Dashboard
         <NavLink href={dashboardUrl} icon={LayoutDashboard} label="Dashboard" isActive={isDashboard} />
       )}
       
-      <NavLink href="/projects" icon={Rocket} label="Projects" isActive={pathname === "/projects" || pathname.startsWith("/projects/")} />
+      <NavLink 
+        href="/projects" 
+        icon={Rocket} 
+        label="Projects" 
+        isActive={pathname === "/projects" || pathname.startsWith("/projects/")} 
+      />
+      
+      <NavLink 
+        href="/search" 
+        icon={Search} 
+        label="Search" 
+        isActive={pathname === "/search"} 
+        className="lg:hidden"
+      />
     </div>
   );
 }
 
-// Individual Nav Link with glassmorphism hover effect
+// Individual Nav Link
 function NavLink({ 
   href, 
   icon: Icon, 
   label, 
-  isActive 
+  isActive,
+  className
 }: { 
   href: string; 
   icon: React.ElementType; 
   label: string; 
   isActive: boolean;
+  className?: string;
 }) {
   return (
     <Link
       href={href}
       className={cn(
-        "relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 group",
+        "px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2",
         isActive 
-          ? "text-primary bg-primary/10" 
-          : "text-muted-foreground hover:text-foreground"
+          ? "bg-background text-foreground shadow-sm" 
+          : "text-muted-foreground hover:text-foreground hover:bg-background/50",
+        className
       )}
     >
-      {/* Hover glassmorphism effect */}
-      <span className={cn(
-        "absolute inset-0 rounded-lg transition-all duration-200",
-        "bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0",
-        "group-hover:from-primary/10 group-hover:via-primary/5 group-hover:to-primary/10",
-        "group-hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]"
-      )} />
-      
-      <Icon className={cn(
-        "h-4 w-4 relative z-10 transition-transform group-hover:scale-110",
-        isActive && "text-primary"
-      )} />
-      <span className="relative z-10">{label}</span>
-      
-      {/* Active indicator */}
-      {isActive && (
-        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-0.5 bg-primary rounded-full" />
-      )}
+      <Icon className="h-4 w-4" />
+      <span>{label}</span>
     </Link>
   );
 }
