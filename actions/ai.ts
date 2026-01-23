@@ -84,6 +84,7 @@ export async function generateTaskSuggestions(
       ? `\nExisting tasks (don't repeat these): ${existingTasks.join(", ")}`
       : "";
 
+
     const prompt = `You are a project planning assistant for an engineering college project management system.
 
 Generate ${numberOfTasks} task suggestions for the following project:
@@ -98,7 +99,7 @@ Requirements:
 3. Include a mix of priorities (low, medium, high)
 4. Estimate realistic days for each task (1-14 days range)
 
-Respond ONLY in this exact JSON format (no markdown, no extra text):
+Respond ONLY in valid JSON (no markdown, no extra text, no explanation, no code block, no comments):
 {
   "tasks": [
     {
@@ -109,21 +110,28 @@ Respond ONLY in this exact JSON format (no markdown, no extra text):
     }
   ]
 }
-
-Generate the tasks now:`;
+`;
 
     const result = await geminiModel.generateContent(prompt);
     const response = result.response;
     const text = response.text();
-    
-    // Parse JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return { tasks: null, error: "Invalid AI response format" };
+    // Try to extract last {...} block as JSON
+    let parsed = null;
+    let errorMsg = "Invalid AI response format";
+    try {
+      // Try to find the last {...} block
+      const matches = text.match(/\{[\s\S]*\}/g);
+      if (matches && matches.length > 0) {
+        parsed = JSON.parse(matches[matches.length - 1]);
+      } else {
+        parsed = JSON.parse(text);
+      }
+    } catch (err) {
+      errorMsg = `Invalid AI response. Raw: ${text.slice(0, 300)}`;
     }
-    
-    const parsed = JSON.parse(jsonMatch[0]);
-    
+    if (!parsed || !parsed.tasks) {
+      return { tasks: null, error: errorMsg };
+    }
     // Validate and sanitize tasks
     const tasks: SuggestedTask[] = parsed.tasks.map((task: any) => ({
       title: String(task.title).slice(0, 100),
@@ -131,7 +139,6 @@ Generate the tasks now:`;
       priority: ["low", "medium", "high"].includes(task.priority) ? task.priority : "medium",
       estimatedDays: Math.min(Math.max(Number(task.estimatedDays) || 3, 1), 30),
     }));
-
     return { tasks, error: null };
   } catch (error) {
     console.error("AI Generation Error:", error);
@@ -191,7 +198,7 @@ ${projectsText}
 Analyze and recommend the top ${Math.min(limit, availableProjects.length)} most suitable projects for this student.
 Consider skill match, learning opportunity, and interest alignment.
 
-Respond ONLY in this exact JSON format (no markdown):
+Respond ONLY in valid JSON (no markdown, no extra text, no explanation, no code block, no comments):
 {
   "recommendations": [
     {
@@ -201,20 +208,26 @@ Respond ONLY in this exact JSON format (no markdown):
     }
   ]
 }
-
-Sort by matchScore descending. matchScore should be 0-100.`;
+`;
 
     const result = await geminiModel.generateContent(prompt);
     const response = result.response;
     const text = response.text();
-    
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return { recommendations: null, error: "Invalid AI response format" };
+    let parsed = null;
+    let errorMsg = "Invalid AI response format";
+    try {
+      const matches = text.match(/\{[\s\S]*\}/g);
+      if (matches && matches.length > 0) {
+        parsed = JSON.parse(matches[matches.length - 1]);
+      } else {
+        parsed = JSON.parse(text);
+      }
+    } catch (err) {
+      errorMsg = `Invalid AI response. Raw: ${text.slice(0, 300)}`;
     }
-    
-    const parsed = JSON.parse(jsonMatch[0]);
-    
+    if (!parsed || !parsed.recommendations) {
+      return { recommendations: null, error: errorMsg };
+    }
     // Validate project IDs exist
     const validProjectIds = new Set(availableProjects.map(p => p.id));
     const recommendations: ProjectRecommendation[] = parsed.recommendations
@@ -224,7 +237,6 @@ Sort by matchScore descending. matchScore should be 0-100.`;
         matchScore: Math.min(Math.max(Number(rec.matchScore) || 50, 0), 100),
         reason: String(rec.reason).slice(0, 200),
       }));
-
     return { recommendations, error: null };
   } catch (error) {
     console.error("AI Generation Error:", error);
