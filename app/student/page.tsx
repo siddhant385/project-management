@@ -1,9 +1,11 @@
 import { getStudentDashboardData } from '@/actions/dashboard'
+import { getActiveAnnouncements } from '@/actions/announcements'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { UserAvatar } from '@/components/ui/user-avatar'
+import { AnnouncementsBanner } from '@/components/announcements'
 import { 
   Plus, 
   FolderGit2, 
@@ -47,6 +49,11 @@ const priorityColors: Record<string, string> = {
 }
 
 export default async function StudentDashboard() {
+  const [dashboardData, announcements] = await Promise.all([
+    getStudentDashboardData(),
+    getActiveAnnouncements(),
+  ]);
+  
   const { 
     owned, 
     member, 
@@ -54,7 +61,7 @@ export default async function StudentDashboard() {
     my_tasks, 
     upcoming_milestones, 
     recent_activity 
-  } = await getStudentDashboardData()
+  } = dashboardData;
 
   const allProjects = [...owned, ...member]
   const taskCompletionRate = stats.tasks_pending + stats.tasks_completed > 0 
@@ -63,6 +70,9 @@ export default async function StudentDashboard() {
 
   return (
     <div className="container max-w-7xl mx-auto py-8 px-4 space-y-8">
+      {/* Announcements */}
+      <AnnouncementsBanner announcements={announcements} />
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
