@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Task, TaskStatus, TaskPriority, updateTaskStatus, deleteTask } from "@/actions/tasks";
+import { useState, useTransition } from "react";
+import { Task, TaskStatus, TaskPriority, updateTaskStatus, deleteTask, createTask } from "@/actions/tasks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -15,7 +15,9 @@ import {
   AlertCircle,
   Clock,
   CheckCircle2,
-  Circle
+  Circle,
+  Sparkles,
+  Loader2
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -27,6 +29,8 @@ import {
 import { toast } from "sonner";
 import { CreateTaskDialog } from "./create-task-dialog";
 import { TaskDetailDialog } from "./task-detail-dialog";
+import { generateTaskSuggestions, type SuggestedTask } from "@/actions/ai";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const getInitials = (name: string) => name?.substring(0, 2).toUpperCase() || "U";
 
@@ -60,15 +64,24 @@ const statusConfig: Record<TaskStatus, { title: string; color: string }> = {
 
 interface TaskBoardProps {
   projectId: string;
+  projectTitle?: string;
+  projectDescription?: string;
   tasks: Task[];
   members: Array<{ user_id: string; profile: { id: string; full_name: string; avatar_url: string | null } }>;
   canEdit: boolean;
 }
 
-export function TaskBoard({ projectId, tasks, members, canEdit }: TaskBoardProps) {
+export function TaskBoard({ projectId, projectTitle, projectDescription, tasks, members, canEdit }: TaskBoardProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+  
+  // AI Suggestions state
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<SuggestedTask[]>([]);
+  const [selectedSuggestions, setSelectedSuggestions] = useState<Set<number>>(new Set());
+  const [showAISuggestions, setShowAISuggestions] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   // Group tasks by status
   const tasksByStatus: Record<TaskStatus, Task[]> = {
@@ -118,10 +131,93 @@ export function TaskBoard({ projectId, tasks, members, canEdit }: TaskBoardProps
     return new Date(dueDate) < new Date();
   };
 
+  // AI Task Suggestions handlers
+  const handleGenerateAISuggestions = async () => {
+    if (!projectTitle || !projectDescription) {
+      toast.error("Project details not available");
+      return;
+    }
+    
+    setIsGeneratingAI(true);
+    setAiSuggestions([]);
+    setSelectedSuggestions(new Set());
+    
+    try {
+      const existingTasks = tasks.map(t => t.title);
+      const result = await generateTaskSuggestions(
+        projectTitle,
+        projectDescription,
+        existingTasks,
+        5
+      );
+
+      if (result.error) {
+        toast.error(result.error);
+      } else if (result.tasks) {
+        setAiSuggestions(result.tasks);
+        setShowAISuggestions(true);
+        setSelectedSuggestions(new Set(result.tasks.map((_, i) => i)));
+        toast.success("AI suggestions generated!");
+      }
+    } catch (error) {
+      toast.error("Failed to generate suggestions");
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
+  const toggleSuggestion = (index: number) => {
+    const newSelected = new Set(selectedSuggestions);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+    } else {
+      newSelected.add(index);
+    }
+    setSelectedSuggestions(newSelected);
+  };
+
+  const handleAddSelectedTasks = () => {
+    const tasksToAdd = aiSuggestions.filter((_, i) => selectedSuggestions.has(i));
+    
+    if (tasksToAdd.length === 0) {
+      toast.error("Please select at least one task");
+      return;
+    }
+    
+    startTransition(async () => {
+      let addedCount = 0;
+      for (const task of tasksToAdd) {
+        try {
+          await createTask(projectId, {
+            title: task.title,
+            description: task.description || "",
+            priority: task.priority,
+          });
+          addedCount++;
+        } catch (error) {
+          console.error("Failed to add task:", task.title);
+        }
+      }
+      
+      if (addedCount > 0) {
+        toast.success(`Added ${addedCount} task${addedCount > 1 ? 's' : ''}`);
+        setShowAISuggestions(false);
+        setAiSuggestions([]);
+        setSelectedSuggestions(new Set());
+      }
+    });
+  };
+
+  const priorityBadgeColors = {
+    low: "bg-green-500/10 text-green-600 border-green-500/20",
+    medium: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
+    high: "bg-red-500/10 text-red-600 border-red-500/20",
+  };
+
   return (
     <div className="space-y-4">
       {/* Header with Create Button */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h3 className="text-lg font-semibold">Tasks</h3>
           <p className="text-sm text-muted-foreground">
@@ -129,9 +225,111 @@ export function TaskBoard({ projectId, tasks, members, canEdit }: TaskBoardProps
           </p>
         </div>
         {canEdit && (
-          <CreateTaskDialog projectId={projectId} members={members} />
+          <div className="flex items-center gap-2">
+            {projectTitle && projectDescription && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateAISuggestions}
+                disabled={isGeneratingAI}
+                className="gap-2"
+              >
+                {isGeneratingAI ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 text-violet-500" />
+                    AI Suggest
+                  </>
+                )}
+              </Button>
+            )}
+            <CreateTaskDialog projectId={projectId} members={members} />
+          </div>
         )}
       </div>
+
+      {/* AI Suggestions Panel */}
+      {showAISuggestions && aiSuggestions.length > 0 && (
+        <Card className="border-violet-500/20 bg-violet-500/5">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-violet-500" />
+                AI Suggested Tasks
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowAISuggestions(false);
+                  setAiSuggestions([]);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {aiSuggestions.map((task, index) => (
+              <div
+                key={index}
+                className={`flex items-start gap-3 p-3 rounded-lg border transition-colors cursor-pointer ${
+                  selectedSuggestions.has(index)
+                    ? "bg-background border-violet-500/30"
+                    : "bg-muted/30 border-transparent"
+                }`}
+                onClick={() => toggleSuggestion(index)}
+              >
+                <Checkbox
+                  checked={selectedSuggestions.has(index)}
+                  onCheckedChange={() => toggleSuggestion(index)}
+                  className="mt-1"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-sm">{task.title}</span>
+                    <Badge variant="outline" className={priorityBadgeColors[task.priority]}>
+                      {task.priority}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      ~{task.estimatedDays} days
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    {task.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+
+            <div className="flex justify-between items-center pt-2">
+              <span className="text-xs text-muted-foreground">
+                {selectedSuggestions.size} of {aiSuggestions.length} selected
+              </span>
+              <Button 
+                onClick={handleAddSelectedTasks} 
+                size="sm" 
+                className="gap-2"
+                disabled={isPending}
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  "Add Selected Tasks"
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Kanban Board */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
