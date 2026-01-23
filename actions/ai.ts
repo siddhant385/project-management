@@ -13,7 +13,6 @@ export async function generateProjectDescription(
   difficulty: string
 ): Promise<{ description: string | null; error: string | null }> {
   try {
-    // Check if user is authenticated
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -72,7 +71,6 @@ export async function generateTaskSuggestions(
   numberOfTasks: number = 5
 ): Promise<{ tasks: SuggestedTask[] | null; error: string | null }> {
   try {
-    // Check if user is authenticated
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -83,7 +81,6 @@ export async function generateTaskSuggestions(
     const existingTasksText = existingTasks.length > 0 
       ? `\nExisting tasks (don't repeat these): ${existingTasks.join(", ")}`
       : "";
-
 
     const prompt = `You are a project planning assistant for an engineering college project management system.
 
@@ -99,7 +96,7 @@ Requirements:
 3. Include a mix of priorities (low, medium, high)
 4. Estimate realistic days for each task (1-14 days range)
 
-Respond ONLY in valid JSON (no markdown, no extra text, no explanation, no code block, no comments):
+Respond ONLY in valid JSON with this structure:
 {
   "tasks": [
     {
@@ -109,29 +106,35 @@ Respond ONLY in valid JSON (no markdown, no extra text, no explanation, no code 
       "estimatedDays": 3
     }
   ]
-}
-`;
+}`;
 
-    const result = await geminiModel.generateContent(prompt);
+    // FIX: Using generationConfig to force JSON
+    const result = await geminiModel.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+      },
+    });
+
     const response = result.response;
     const text = response.text();
-    // Try to extract last {...} block as JSON
+    
     let parsed = null;
-    let errorMsg = "Invalid AI response format";
+    
     try {
-      // Try to find the last {...} block
-      const matches = text.match(/\{[\s\S]*\}/g);
-      if (matches && matches.length > 0) {
-        parsed = JSON.parse(matches[matches.length - 1]);
-      } else {
-        parsed = JSON.parse(text);
-      }
-    } catch (err) {
-      errorMsg = `Invalid AI response. Raw: ${text.slice(0, 300)}`;
+      // Clean up markdown just in case (e.g. ```json ... ```) 
+      // although strict JSON mode usually handles it, this is a safety net.
+      const cleanText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+      parsed = JSON.parse(cleanText);
+    } catch (e) {
+      console.error("JSON Parse Error raw text:", text);
+      return { tasks: null, error: "Invalid response format from AI" };
     }
+
     if (!parsed || !parsed.tasks) {
-      return { tasks: null, error: errorMsg };
+      return { tasks: null, error: "Invalid data structure received" };
     }
+
     // Validate and sanitize tasks
     const tasks: SuggestedTask[] = parsed.tasks.map((task: any) => ({
       title: String(task.title).slice(0, 100),
@@ -139,6 +142,7 @@ Respond ONLY in valid JSON (no markdown, no extra text, no explanation, no code 
       priority: ["low", "medium", "high"].includes(task.priority) ? task.priority : "medium",
       estimatedDays: Math.min(Math.max(Number(task.estimatedDays) || 3, 1), 30),
     }));
+
     return { tasks, error: null };
   } catch (error) {
     console.error("AI Generation Error:", error);
@@ -198,7 +202,7 @@ ${projectsText}
 Analyze and recommend the top ${Math.min(limit, availableProjects.length)} most suitable projects for this student.
 Consider skill match, learning opportunity, and interest alignment.
 
-Respond ONLY in valid JSON (no markdown, no extra text, no explanation, no code block, no comments):
+Respond ONLY in valid JSON with this structure:
 {
   "recommendations": [
     {
@@ -207,27 +211,34 @@ Respond ONLY in valid JSON (no markdown, no extra text, no explanation, no code 
       "reason": "Brief reason why this project is recommended"
     }
   ]
-}
-`;
+}`;
 
-    const result = await geminiModel.generateContent(prompt);
+    // FIX: Using generationConfig to force JSON
+    const result = await geminiModel.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+      },
+    });
+
     const response = result.response;
     const text = response.text();
+    
     let parsed = null;
-    let errorMsg = "Invalid AI response format";
+    
     try {
-      const matches = text.match(/\{[\s\S]*\}/g);
-      if (matches && matches.length > 0) {
-        parsed = JSON.parse(matches[matches.length - 1]);
-      } else {
-        parsed = JSON.parse(text);
-      }
-    } catch (err) {
-      errorMsg = `Invalid AI response. Raw: ${text.slice(0, 300)}`;
+      // Clean up markdown wrapper if present
+      const cleanText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+      parsed = JSON.parse(cleanText);
+    } catch (e) {
+      console.error("JSON Parse Error raw text:", text);
+      return { recommendations: null, error: "Failed to parse AI response" };
     }
+
     if (!parsed || !parsed.recommendations) {
-      return { recommendations: null, error: errorMsg };
+      return { recommendations: null, error: "Invalid AI response structure" };
     }
+
     // Validate project IDs exist
     const validProjectIds = new Set(availableProjects.map(p => p.id));
     const recommendations: ProjectRecommendation[] = parsed.recommendations
@@ -237,6 +248,7 @@ Respond ONLY in valid JSON (no markdown, no extra text, no explanation, no code 
         matchScore: Math.min(Math.max(Number(rec.matchScore) || 50, 0), 100),
         reason: String(rec.reason).slice(0, 200),
       }));
+
     return { recommendations, error: null };
   } catch (error) {
     console.error("AI Generation Error:", error);
