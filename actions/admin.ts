@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 
 export type UserRole = "student" | "mentor" | "admin";
@@ -249,7 +250,7 @@ export async function deleteUser(
 ): Promise<{ success?: string; error?: string }> {
   const supabase = await createClient();
   
-  // Check admin access
+  // ⚠️ SECURITY: Check admin access FIRST before using service key
   if (!(await isAdmin())) {
     return { error: "Unauthorized: Admin access required" };
   }
@@ -262,19 +263,25 @@ export async function deleteUser(
     return { error: "Cannot delete yourself" };
   }
 
-  // Delete profile (this should cascade or be handled by DB triggers)
-  const { error } = await supabase
-    .from("profiles")
-    .delete()
-    .eq("id", userId);
+  try {
+    // Use admin client to delete from auth.users (requires service role key)
+    // This is safe because we already verified isAdmin() above
+    const adminClient = createAdminClient();
+    
+    // Delete from auth.users table (this will cascade delete profile if ON DELETE CASCADE is set)
+    const { error: authError } = await adminClient.auth.admin.deleteUser(userId);
 
-  if (error) {
-    console.error("Error deleting user:", error);
-    return { error: "Failed to delete user" };
+    if (authError) {
+      console.error("Error deleting user from auth:", authError);
+      return { error: "Failed to delete user" };
+    }
+
+    revalidatePath("/admin");
+    return { success: "User deleted successfully" };
+  } catch (error) {
+    console.error("Error in deleteUser:", error);
+    return { error: "Failed to delete user. Make sure SUPABASE_SERVICE_ROLE_KEY is set." };
   }
-
-  revalidatePath("/admin");
-  return { success: "User deleted successfully" };
 }
 
 // ---------------------------------------------------------
