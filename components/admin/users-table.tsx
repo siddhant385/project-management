@@ -49,8 +49,9 @@ import {
   toggleUserBan, 
   deleteUser,
   type AdminUser, 
-  type UserRole 
+  type UserRole,
 } from "@/actions/admin";
+import { DEPARTMENTS, type Department } from "@/lib/constants";
 import { RoleChangeDialog } from "./role-change-dialog";
 
 interface UsersTableProps {
@@ -75,6 +76,7 @@ export function UsersTable({ initialUsers, initialTotal }: UsersTableProps) {
   const [total, setTotal] = useState(initialTotal);
   const [page, setPage] = useState(1);
   const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
+  const [departmentFilter, setDepartmentFilter] = useState<Department | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isPending, startTransition] = useTransition();
   
@@ -89,13 +91,14 @@ export function UsersTable({ initialUsers, initialTotal }: UsersTableProps) {
   const limit = 10;
   const totalPages = Math.ceil(total / limit);
 
-  const fetchUsers = (newPage?: number, role?: UserRole | "all", search?: string) => {
+  const fetchUsers = (newPage?: number, role?: UserRole | "all", search?: string, dept?: Department | "all") => {
     startTransition(async () => {
       const result = await getAllUsers(
         newPage || page,
         limit,
         role === "all" ? undefined : role,
-        search || undefined
+        search || undefined,
+        dept === "all" ? undefined : dept
       );
       setUsers(result.users);
       setTotal(result.total);
@@ -104,19 +107,26 @@ export function UsersTable({ initialUsers, initialTotal }: UsersTableProps) {
 
   const handleSearch = () => {
     setPage(1);
-    fetchUsers(1, roleFilter, searchQuery);
+    fetchUsers(1, roleFilter, searchQuery, departmentFilter);
   };
 
   const handleRoleFilter = (value: string) => {
     const role = value as UserRole | "all";
     setRoleFilter(role);
     setPage(1);
-    fetchUsers(1, role, searchQuery);
+    fetchUsers(1, role, searchQuery, departmentFilter);
+  };
+
+  const handleDepartmentFilter = (value: string) => {
+    const dept = value as Department | "all";
+    setDepartmentFilter(dept);
+    setPage(1);
+    fetchUsers(1, roleFilter, searchQuery, dept);
   };
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
-    fetchUsers(newPage, roleFilter, searchQuery);
+    fetchUsers(newPage, roleFilter, searchQuery, departmentFilter);
   };
 
   const handleToggleBan = async (user: AdminUser) => {
@@ -125,7 +135,7 @@ export function UsersTable({ initialUsers, initialTotal }: UsersTableProps) {
       toast.error(result.error);
     } else {
       toast.success(result.success);
-      fetchUsers(page, roleFilter, searchQuery);
+      fetchUsers(page, roleFilter, searchQuery, departmentFilter);
     }
   };
 
@@ -137,7 +147,7 @@ export function UsersTable({ initialUsers, initialTotal }: UsersTableProps) {
       toast.error(result.error);
     } else {
       toast.success(result.success);
-      fetchUsers(page, roleFilter, searchQuery);
+      fetchUsers(page, roleFilter, searchQuery, departmentFilter);
     }
     setDeleteDialogOpen(false);
     setUserToDelete(null);
@@ -181,6 +191,19 @@ export function UsersTable({ initialUsers, initialTotal }: UsersTableProps) {
                 <SelectItem value="student">Students</SelectItem>
                 <SelectItem value="mentor">Mentors</SelectItem>
                 <SelectItem value="admin">Admins</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={departmentFilter} onValueChange={handleDepartmentFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Department" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Depts</SelectItem>
+                {DEPARTMENTS.map((dept) => (
+                  <SelectItem key={dept} value={dept}>
+                    {dept}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Button onClick={handleSearch} disabled={isPending}>
@@ -329,7 +352,7 @@ export function UsersTable({ initialUsers, initialTotal }: UsersTableProps) {
         onOpenChange={(open) => {
           setRoleDialogOpen(open);
           if (!open) {
-            fetchUsers(page, roleFilter, searchQuery);
+            fetchUsers(page, roleFilter, searchQuery, departmentFilter);
           }
         }}
       />

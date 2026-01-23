@@ -5,6 +5,7 @@ import {
   getAllProjects,
   getAnnouncements,
   getRecentActivity,
+  getDepartmentStats,
   isAdmin 
 } from "@/actions/admin";
 import { 
@@ -12,7 +13,8 @@ import {
   UsersTable, 
   ProjectsTable,
   AnnouncementsCard,
-  RecentActivity 
+  RecentActivity,
+  DepartmentStatsCard 
 } from "@/components/admin";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutDashboard, Users, FolderKanban, Megaphone } from "lucide-react";
@@ -28,12 +30,13 @@ export default async function AdminDashboard() {
   }
 
   // Fetch data
-  const [stats, usersData, projectsData, announcements, recentActivity] = await Promise.all([
+  const [stats, usersData, projectsData, announcements, recentActivity, departmentStats] = await Promise.all([
     getAdminStats(),
     getAllUsers(1, 10),
     getAllProjects(1, 10),
     getAnnouncements(),
     getRecentActivity(10),
+    getDepartmentStats(),
   ]);
 
   return (
@@ -65,6 +68,7 @@ export default async function AdminDashboard() {
 
         <TabsContent value="overview" className="space-y-6">
           <StatsCards stats={stats} />
+          <DepartmentStatsCard stats={departmentStats} />
           <RecentActivity 
             recentUsers={recentActivity.recentUsers} 
             recentProjects={recentActivity.recentProjects} 

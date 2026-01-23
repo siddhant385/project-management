@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { DEPARTMENTS, type Department } from "@/lib/constants";
 
 export type UserRole = "student" | "mentor" | "admin";
 
@@ -123,13 +124,79 @@ export async function getAdminStats(): Promise<AdminStats> {
 }
 
 // ---------------------------------------------------------
+// 2.5 GET DEPARTMENT STATS
+// ---------------------------------------------------------
+export interface DepartmentStats {
+  department: string;
+  students: number;
+  mentors: number;
+  projects: number;
+}
+
+export async function getDepartmentStats(): Promise<DepartmentStats[]> {
+  const supabase = await createClient();
+  
+  if (!(await isAdmin())) {
+    throw new Error("Unauthorized: Admin access required");
+  }
+
+  // Get all profiles with department
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("department, role");
+
+  // Get all projects with initiator's department
+  const { data: projects } = await supabase
+    .from("projects")
+    .select("id, initiator:profiles!initiator_id(department)");
+
+  // Calculate stats per department
+  const deptStats: Record<string, DepartmentStats> = {};
+
+  // Initialize all departments
+  DEPARTMENTS.forEach(dept => {
+    deptStats[dept] = {
+      department: dept,
+      students: 0,
+      mentors: 0,
+      projects: 0,
+    };
+  });
+
+  // Count users per department
+  profiles?.forEach(profile => {
+    if (profile.department && deptStats[profile.department]) {
+      if (profile.role === "student") {
+        deptStats[profile.department].students++;
+      } else if (profile.role === "mentor") {
+        deptStats[profile.department].mentors++;
+      }
+    }
+  });
+
+  // Count projects per department
+  projects?.forEach(project => {
+    const dept = (project.initiator as any)?.department;
+    if (dept && deptStats[dept]) {
+      deptStats[dept].projects++;
+    }
+  });
+
+  // Convert to array and sort by total activity
+  return Object.values(deptStats)
+    .filter(d => d.students > 0 || d.mentors > 0 || d.projects > 0)
+    .sort((a, b) => (b.students + b.mentors + b.projects) - (a.students + a.mentors + a.projects));
+}
+
+// ---------------------------------------------------------
 // 3. GET ALL USERS
 // ---------------------------------------------------------
 export async function getAllUsers(
   page: number = 1,
   limit: number = 10,
   roleFilter?: UserRole,
-  searchQuery?: string
+  searchQuery?: string,
+  departmentFilter?: Department
 ): Promise<{ users: AdminUser[]; total: number }> {
   const supabase = await createClient();
   
@@ -147,6 +214,11 @@ export async function getAllUsers(
   // Apply role filter
   if (roleFilter) {
     query = query.eq("role", roleFilter);
+  }
+
+  // Apply department filter
+  if (departmentFilter) {
+    query = query.eq("department", departmentFilter);
   }
 
   // Apply search filter

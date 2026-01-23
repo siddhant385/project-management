@@ -4,3 +4,4 @@ export { RoleChangeDialog } from "./role-change-dialog";
 export { ProjectsTable } from "./projects-table";
 export { AnnouncementsCard } from "./announcements-card";
 export { RecentActivity } from "./recent-activity";
+export { DepartmentStatsCard } from "./department-stats";
