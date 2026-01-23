@@ -55,11 +55,22 @@ export async function updateSession(request: NextRequest) {
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role, onboarding_completed")
+      .select("role, onboarding_completed, is_banned")
       .eq("id", user.id)
       .single();
 
     if (profile) {
+      // Check if user is banned
+      if (profile.is_banned) {
+        // Sign out the banned user
+        await supabase.auth.signOut();
+        
+        const url = request.nextUrl.clone();
+        url.pathname = "/auth/login";
+        url.searchParams.set("error", "banned");
+        return NextResponse.redirect(url);
+      }
+
       const path = request.nextUrl.pathname;
       const role = profile.role; // 'student', 'mentor', or 'admin'
 

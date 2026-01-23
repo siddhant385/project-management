@@ -12,14 +12,19 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Link from "next/link";
-import { useState, useEffect } from "react"; // 1. useEffect import kiya
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { login } from "@/actions/auth/auth"; 
 import { toast } from "sonner";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
   const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
 
-  // 2. Browser Cache Fix: Component mount hote hi loading false kar do
+  // Browser Cache Fix: Component mount hote hi loading false kar do
   useEffect(() => {
     setLoading(false);
   }, []);
@@ -42,6 +47,14 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
+      {error === "banned" && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Your account has been suspended. Please contact the administrator.
+          </AlertDescription>
+        </Alert>
+      )}
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>

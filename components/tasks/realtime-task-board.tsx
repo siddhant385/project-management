@@ -7,6 +7,8 @@ import { TaskBoard } from "./task-board";
 
 interface RealtimeTaskBoardProps {
   projectId: string;
+  projectTitle?: string;
+  projectDescription?: string;
   initialTasks: Task[];
   members: Array<{ 
     user_id: string; 
@@ -16,7 +18,9 @@ interface RealtimeTaskBoardProps {
 }
 
 export function RealtimeTaskBoard({ 
-  projectId, 
+  projectId,
+  projectTitle,
+  projectDescription,
   initialTasks, 
   members, 
   canEdit 
@@ -89,6 +93,8 @@ export function RealtimeTaskBoard({
   return (
     <TaskBoard
       projectId={projectId}
+      projectTitle={projectTitle}
+      projectDescription={projectDescription}
       tasks={tasks}
       members={members}
       canEdit={canEdit}

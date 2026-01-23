@@ -1,4 +1,5 @@
 import { getMentorDashboardData, getMentorChartData } from '@/actions/dashboard'
+import { getActiveAnnouncements } from '@/actions/announcements'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -6,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { UserAvatar } from '@/components/ui/user-avatar'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { AnnouncementsBanner } from '@/components/announcements'
 import { 
   CheckCircle, Clock, Search, Users, Plus, LayoutDashboard, 
   AlertCircle, ArrowRight, Target, Activity, BookOpen, 
@@ -100,7 +102,12 @@ function ProjectCard({
 }
 
 export default async function MentorDashboard() {
-  const { assigned_projects, pending_reviews, open_projects, stats } = await getMentorDashboardData()
+  const [dashboardData, announcements] = await Promise.all([
+    getMentorDashboardData(),
+    getActiveAnnouncements(),
+  ]);
+  
+  const { assigned_projects, pending_reviews, open_projects, stats } = dashboardData;
   
   // Get chart data
   const { performanceData, activityData } = await getMentorChartData()
@@ -176,6 +183,9 @@ export default async function MentorDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       <div className="container max-w-7xl mx-auto py-8 px-4 space-y-8">
+        
+        {/* Announcements */}
+        <AnnouncementsBanner announcements={announcements} />
         
         {/* Header Section */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">

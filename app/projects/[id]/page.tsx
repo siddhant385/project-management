@@ -247,6 +247,8 @@ export default async function ProjectPage({ params }: Props) {
         <TabsContent value="tasks" className="mt-6">
           <RealtimeTaskBoard 
             projectId={project.id}
+            projectTitle={project.title}
+            projectDescription={project.description}
             initialTasks={tasks}
             members={members.map((m: any) => ({
               user_id: m.user_id,
