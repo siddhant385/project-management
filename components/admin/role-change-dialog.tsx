@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -53,6 +53,13 @@ export function RoleChangeDialog({ user, open, onOpenChange }: RoleChangeDialogP
   const [selectedRole, setSelectedRole] = useState<UserRole | "">(user?.role || "");
   const [isPending, startTransition] = useTransition();
 
+  // Reset selected role only when dialog opens with a new user
+  useEffect(() => {
+    if (open && user) {
+      setSelectedRole(user.role);
+    }
+  }, [open, user?.id]);
+
   const handleSubmit = () => {
     if (!user || !selectedRole) return;
 
@@ -67,11 +74,6 @@ export function RoleChangeDialog({ user, open, onOpenChange }: RoleChangeDialogP
       }
     });
   };
-
-  // Reset selected role when user changes
-  if (user && selectedRole !== user.role && !isPending) {
-    setSelectedRole(user.role);
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
