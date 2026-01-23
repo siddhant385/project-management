@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { getPublicStats } from "@/actions/dashboard";
+import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
@@ -10,18 +11,20 @@ import {
   GraduationCap, 
   Trophy, 
   ArrowRight, 
-  Sparkles,
   Code2,
-  Lightbulb,
-  Target,
-  Clock
+  GitBranch,
+  Zap,
+  Shield,
+  Clock,
+  ChevronRight,
+  Lock
 } from "lucide-react";
 
 const statusColors: Record<string, string> = {
-  open: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-  in_progress: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-  completed: "bg-green-500/10 text-green-600 border-green-500/20",
-  pending_approval: "bg-purple-500/10 text-purple-600 border-purple-500/20"
+  open: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
+  in_progress: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
+  completed: "bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30",
+  pending_approval: "bg-violet-500/15 text-violet-700 dark:text-violet-400 border-violet-500/30"
 };
 
 const statusLabels: Record<string, string> = {
@@ -33,225 +36,224 @@ const statusLabels: Record<string, string> = {
 
 export default async function Home() {
   const stats = await getPublicStats();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const isAuthenticated = !!user;
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/10 py-20 lg:py-32">
-        <div className="absolute inset-0 bg-grid-pattern opacity-5" />
-        <div className="container relative mx-auto px-4">
-          <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-            {/* College Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full border bg-background/80 backdrop-blur px-4 py-1.5 text-sm mb-6 shadow-sm">
-              <GraduationCap className="h-4 w-4 text-primary" />
-              <span className="font-medium">Jabalpur Engineering College</span>
-            </div>
-            
-            {/* Main Heading */}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-              <span className="bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
-                Project Management
-              </span>
-              <br />
-              <span className="text-foreground">System</span>
-            </h1>
-            
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-8">
-              JEC Jabalpur ka official platform jahan students apne innovative projects create karte hain, 
-              mentors guide karte hain, aur ideas reality bante hain.
-            </p>
-            
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button asChild size="lg" className="gap-2">
-                <Link href="/auth/sign-up">
-                  <Rocket className="h-5 w-5" />
-                  Get Started
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg" className="gap-2">
-                <Link href="/projects">
-                  <Code2 className="h-5 w-5" />
-                  Browse Projects
-                </Link>
-              </Button>
-            </div>
-          </div>
+      {/* Hero Section - Cleaner, More Professional */}
+      <section className="relative overflow-hidden py-16 lg:py-24">
+        {/* Subtle Background Pattern */}
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]" />
+          <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-primary/10 blur-[100px]" />
         </div>
         
-        {/* Decorative Elements */}
-        <div className="absolute -top-20 -right-20 w-72 h-72 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
+            {/* College Badge - More Subtle */}
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary mb-8">
+              <GraduationCap className="h-3.5 w-3.5" />
+              Jabalpur Engineering College
+            </div>
+            
+            {/* Main Heading - Bolder, Cleaner */}
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6 text-balance">
+              Build Projects.
+              <br />
+              <span className="text-primary">Get Mentored.</span>
+            </h1>
+            
+            <p className="text-base sm:text-lg text-muted-foreground max-w-xl mb-8 text-balance">
+              JEC ka platform jahan students real-world projects banate hain faculty guidance ke saath. 
+              Structured milestones, team collaboration, aur progress tracking - sab ek jagah.
+            </p>
+            
+            {/* CTA Buttons - Cleaner */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              {isAuthenticated ? (
+                <Button asChild size="lg" className="gap-2 px-6">
+                  <Link href="/student">
+                    Go to Dashboard
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              ) : (
+                <>
+                  <Button asChild size="lg" className="gap-2 px-6">
+                    <Link href="/auth/sign-up">
+                      Start Building
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" size="lg" className="gap-2">
+                    <Link href="/auth/login">
+                      Sign In
+                    </Link>
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 border-y bg-muted/30">
+      {/* Stats Section - Compact, Clean */}
+      <section className="py-12 border-y bg-muted/40">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-            <StatsCard 
-              icon={<Rocket className="h-6 w-6" />} 
-              value={stats.totalProjects} 
-              label="Total Projects" 
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-8">
+            <StatItem value={stats.totalProjects} label="Projects" />
+            <StatItem value={stats.activeProjects} label="Active" highlight />
+            <StatItem value={stats.completedProjects} label="Completed" />
+            <StatItem value={stats.totalStudents} label="Students" />
+            <StatItem value={stats.totalMentors} label="Mentors" className="col-span-2 sm:col-span-1" />
+          </div>
+        </div>
+      </section>
+
+      {/* Recent Projects - Main Focus */}
+      <section className="py-16 lg:py-20">
+        <div className="container mx-auto px-4">
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <h2 className="text-2xl font-bold mb-1">Live Projects</h2>
+              <p className="text-sm text-muted-foreground">
+                Real projects built by JEC students
+              </p>
+            </div>
+            {isAuthenticated && (
+              <Button asChild variant="ghost" size="sm" className="gap-1 text-muted-foreground">
+                <Link href="/projects">
+                  View All <ChevronRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            )}
+          </div>
+          
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {stats.recentProjects.slice(0, 6).map((project: any) => (
+              <ProjectCard 
+                key={project.id} 
+                project={project} 
+                isAuthenticated={isAuthenticated}
+              />
+            ))}
+          </div>
+
+          {!isAuthenticated && stats.recentProjects.length > 0 && (
+            <div className="mt-8 text-center">
+              <p className="text-sm text-muted-foreground mb-3">
+                Sign in to view project details and apply
+              </p>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/auth/login" className="gap-2">
+                  <Lock className="h-3.5 w-3.5" />
+                  Sign in to Explore
+                </Link>
+              </Button>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Features - Minimal Grid */}
+      <section className="py-16 lg:py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl font-bold mb-2">How It Works</h2>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Simple workflow for students and mentors
+            </p>
+          </div>
+          
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
+            <FeatureItem 
+              icon={<Rocket className="h-5 w-5" />}
+              title="Create Project"
+              description="Define scope, add team members"
             />
-            <StatsCard 
-              icon={<Sparkles className="h-6 w-6" />} 
-              value={stats.activeProjects} 
-              label="Active Projects" 
+            <FeatureItem 
+              icon={<GraduationCap className="h-5 w-5" />}
+              title="Get Mentor"
+              description="Faculty approves & guides"
             />
-            <StatsCard 
-              icon={<Trophy className="h-6 w-6" />} 
-              value={stats.completedProjects} 
-              label="Completed" 
+            <FeatureItem 
+              icon={<GitBranch className="h-5 w-5" />}
+              title="Track Progress"
+              description="Milestones, tasks, deadlines"
             />
-            <StatsCard 
-              icon={<Users className="h-6 w-6" />} 
-              value={stats.totalStudents} 
-              label="Students" 
-            />
-            <StatsCard 
-              icon={<GraduationCap className="h-6 w-6" />} 
-              value={stats.totalMentors} 
-              label="Mentors" 
+            <FeatureItem 
+              icon={<Trophy className="h-5 w-5" />}
+              title="Complete & Showcase"
+              description="Build your portfolio"
             />
           </div>
         </div>
       </section>
 
-      {/* Featured Projects */}
-      {stats.featuredProjects.length > 0 && (
-        <section className="py-16 lg:py-24">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between mb-10">
-              <div>
-                <h2 className="text-2xl md:text-3xl font-bold mb-2">Featured Projects</h2>
-                <p className="text-muted-foreground">Mentor-approved innovative projects by our students</p>
+      {/* Why Choose - Trust Indicators */}
+      <section className="py-16 lg:py-20">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="grid sm:grid-cols-3 gap-8 text-center">
+            <div>
+              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 text-primary mb-4">
+                <Zap className="h-5 w-5" />
               </div>
-              <Button asChild variant="ghost" className="hidden sm:flex gap-2">
-                <Link href="/projects">
-                  View All <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
+              <h3 className="font-semibold mb-1">Real-time Updates</h3>
+              <p className="text-sm text-muted-foreground">
+                Live sync across all team members
+              </p>
             </div>
-            
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {stats.featuredProjects.map((project: any) => (
-                <ProjectCard key={project.id} project={project} featured />
-              ))}
+            <div>
+              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 text-primary mb-4">
+                <Shield className="h-5 w-5" />
+              </div>
+              <h3 className="font-semibold mb-1">Faculty Verified</h3>
+              <p className="text-sm text-muted-foreground">
+                All projects mentor-approved
+              </p>
             </div>
+            <div>
+              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 text-primary mb-4">
+                <Clock className="h-5 w-5" />
+              </div>
+              <h3 className="font-semibold mb-1">Track Deadlines</h3>
+              <p className="text-sm text-muted-foreground">
+                Never miss a milestone
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section - Simple */}
+      {!isAuthenticated && (
+        <section className="py-16 lg:py-20 bg-primary/5 border-t">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-2xl font-bold mb-3">Ready to Start?</h2>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              Join {stats.totalStudents}+ JEC students already building projects
+            </p>
+            <Button asChild size="lg" className="gap-2">
+              <Link href="/auth/sign-up">
+                Create Free Account
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
           </div>
         </section>
       )}
 
-      {/* Recent Projects */}
-      <section className="py-16 lg:py-24 bg-muted/30">
+      {/* Footer - Minimal */}
+      <footer className="py-6 border-t">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-10">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold mb-2">Recent Projects</h2>
-              <p className="text-muted-foreground">Latest projects added to the platform</p>
-            </div>
-            <Button asChild variant="ghost" className="hidden sm:flex gap-2">
-              <Link href="/projects">
-                View All <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {stats.recentProjects.map((project: any) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
-          </div>
-          
-          <div className="flex justify-center mt-10 sm:hidden">
-            <Button asChild variant="outline" className="gap-2">
-              <Link href="/projects">
-                View All Projects <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-16 lg:py-24">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">Why Use This Platform?</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              A complete ecosystem for academic project management
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <FeatureCard 
-              icon={<Lightbulb className="h-8 w-8" />}
-              title="Idea to Reality"
-              description="Transform your project ideas into reality with structured milestones and task management."
-            />
-            <FeatureCard 
-              icon={<Users className="h-8 w-8" />}
-              title="Expert Mentorship"
-              description="Get guidance from experienced faculty mentors who help you navigate through challenges."
-            />
-            <FeatureCard 
-              icon={<Target className="h-8 w-8" />}
-              title="Track Progress"
-              description="Real-time progress tracking with visual timelines, task boards, and activity heatmaps."
-            />
-            <FeatureCard 
-              icon={<Code2 className="h-8 w-8" />}
-              title="Collaborate"
-              description="Work seamlessly with team members, share files, and coordinate tasks efficiently."
-            />
-            <FeatureCard 
-              icon={<Clock className="h-8 w-8" />}
-              title="Meet Deadlines"
-              description="Never miss a deadline with smart notifications and upcoming milestone reminders."
-            />
-            <FeatureCard 
-              icon={<Trophy className="h-8 w-8" />}
-              title="Showcase Work"
-              description="Build your portfolio and showcase completed projects to potential employers."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-16 lg:py-24 bg-primary/5">
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-2xl mx-auto">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">Ready to Start Your Project?</h2>
-            <p className="text-muted-foreground mb-8">
-              Join hundreds of JEC students who are already building amazing projects.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" className="gap-2">
-                <Link href="/auth/sign-up">
-                  <Rocket className="h-5 w-5" />
-                  Create Account
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link href="/auth/login">Already have an account? Sign in</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-8 border-t">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
-              <Rocket className="h-5 w-5 text-primary" />
-              <span className="font-semibold">JEC Project Manager</span>
+              <Code2 className="h-4 w-4 text-primary" />
+              <span className="font-medium text-foreground">JEC Project Hub</span>
             </div>
-            <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Jabalpur Engineering College. All rights reserved.
-            </p>
+            <p>© {new Date().getFullYear()} Jabalpur Engineering College</p>
           </div>
         </div>
       </footer>
@@ -259,96 +261,130 @@ export default async function Home() {
   );
 }
 
-// Stats Card Component
-function StatsCard({ icon, value, label }: { icon: React.ReactNode; value: number; label: string }) {
+// Stat Item - Cleaner
+function StatItem({ 
+  value, 
+  label, 
+  highlight = false,
+  className = ""
+}: { 
+  value: number; 
+  label: string; 
+  highlight?: boolean;
+  className?: string;
+}) {
   return (
-    <div className="flex flex-col items-center text-center p-4">
-      <div className="p-3 rounded-full bg-primary/10 text-primary mb-3">
-        {icon}
+    <div className={`text-center ${className}`}>
+      <div className={`text-3xl font-bold ${highlight ? 'text-primary' : 'text-foreground'}`}>
+        {value}
       </div>
-      <div className="text-3xl md:text-4xl font-bold text-foreground">{value}</div>
-      <div className="text-sm text-muted-foreground">{label}</div>
+      <div className="text-xs text-muted-foreground mt-1">{label}</div>
     </div>
   );
 }
 
-// Feature Card Component
-function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+// Feature Item - Compact
+function FeatureItem({ 
+  icon, 
+  title, 
+  description 
+}: { 
+  icon: React.ReactNode; 
+  title: string; 
+  description: string;
+}) {
   return (
-    <Card className="border-none shadow-none bg-muted/50 hover:bg-muted transition-colors">
-      <CardHeader>
-        <div className="p-3 rounded-lg bg-primary/10 text-primary w-fit mb-2">
-          {icon}
-        </div>
-        <CardTitle className="text-lg">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <CardDescription className="text-base">{description}</CardDescription>
-      </CardContent>
-    </Card>
+    <div className="text-center">
+      <div className="inline-flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 text-primary mb-3">
+        {icon}
+      </div>
+      <h3 className="font-medium text-sm mb-1">{title}</h3>
+      <p className="text-xs text-muted-foreground">{description}</p>
+    </div>
   );
 }
 
-// Project Card Component
-function ProjectCard({ project, featured = false }: { project: any; featured?: boolean }) {
-  const initiator = project.initiator as any;
-  const mentor = project.mentor as any;
+// Project Card - Non-auth users can't click
+function ProjectCard({ 
+  project, 
+  isAuthenticated 
+}: { 
+  project: any; 
+  isAuthenticated: boolean;
+}) {
+  const initiator = project.initiator;
   
-  return (
-    <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-lg line-clamp-2 group-hover:text-primary transition-colors">
-            <Link href={`/projects/${project.id}`}>{project.title}</Link>
-          </CardTitle>
-          <Badge variant="outline" className={`shrink-0 ${statusColors[project.status] || ''}`}>
-            {statusLabels[project.status] || project.status}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-          {project.description || "No description available"}
-        </p>
-        
-        {/* Tags */}
-        {project.tags && project.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-4">
-            {project.tags.slice(0, 3).map((tag: string, i: number) => (
-              <Badge key={i} variant="secondary" className="text-xs">
-                {tag}
-              </Badge>
-            ))}
-            {project.tags.length > 3 && (
-              <Badge variant="secondary" className="text-xs">
-                +{project.tags.length - 3}
-              </Badge>
-            )}
+  const CardWrapper = isAuthenticated 
+    ? ({ children }: { children: React.ReactNode }) => (
+        <Link href={`/projects/${project.id}`} className="block">
+          {children}
+        </Link>
+      )
+    : ({ children }: { children: React.ReactNode }) => (
+        <div className="relative group cursor-not-allowed">
+          {children}
+          {/* Login overlay on hover */}
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
+            <Link 
+              href="/auth/login" 
+              className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+            >
+              <Lock className="h-4 w-4" />
+              Sign in to view
+            </Link>
           </div>
-        )}
-        
-        {/* Author & Mentor */}
-        <div className="flex items-center justify-between pt-3 border-t">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-6 w-6">
+        </div>
+      );
+
+  return (
+    <CardWrapper>
+      <Card className={`h-full transition-all duration-200 ${isAuthenticated ? 'hover:shadow-md hover:border-primary/30' : ''}`}>
+        <CardContent className="p-4">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <h3 className="font-semibold text-sm line-clamp-1 flex-1">
+              {project.title}
+            </h3>
+            <Badge variant="outline" className={`text-[10px] shrink-0 ${statusColors[project.status] || ''}`}>
+              {statusLabels[project.status] || project.status}
+            </Badge>
+          </div>
+          
+          {/* Description */}
+          <p className="text-xs text-muted-foreground line-clamp-2 mb-3 min-h-[32px]">
+            {project.description || "No description"}
+          </p>
+          
+          {/* Tags */}
+          {project.tags && project.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-3">
+              {project.tags.slice(0, 2).map((tag: string, i: number) => (
+                <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                  {tag}
+                </span>
+              ))}
+              {project.tags.length > 2 && (
+                <span className="text-[10px] text-muted-foreground">
+                  +{project.tags.length - 2}
+                </span>
+              )}
+            </div>
+          )}
+          
+          {/* Author */}
+          <div className="flex items-center gap-2 pt-3 border-t">
+            <Avatar className="h-5 w-5">
               <AvatarImage src={initiator?.avatar_url} />
-              <AvatarFallback className="text-xs">
+              <AvatarFallback className="text-[10px]">
                 {initiator?.full_name?.charAt(0) || 'U'}
               </AvatarFallback>
             </Avatar>
-            <span className="text-xs text-muted-foreground truncate max-w-[100px]">
+            <span className="text-xs text-muted-foreground truncate">
               {initiator?.full_name || 'Unknown'}
             </span>
           </div>
-          
-          {featured && mentor && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <GraduationCap className="h-3 w-3" />
-              <span className="truncate max-w-[80px]">{mentor.full_name}</span>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </CardWrapper>
   );
 }

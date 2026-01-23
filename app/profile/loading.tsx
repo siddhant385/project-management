@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function ProfileLoading() {
   return (
-    <div className="container max-w-4xl py-8 space-y-8">
+    <div className="container max-w-4xl mx-auto py-8 px-4 space-y-8">
       {/* Profile Header */}
       <Card>
         <CardContent className="pt-6">

@@ -3,7 +3,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 
 export default function ProjectsLoading() {
   return (
-    <div className="container py-8 space-y-8">
+    <div className="container max-w-7xl mx-auto py-8 px-4 space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between gap-4">
         <div className="space-y-2">

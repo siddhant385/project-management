@@ -3,12 +3,19 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function MentorDashboardLoading() {
   return (
-    <div className="container py-8 space-y-8">
-      {/* Header */}
-      <div className="space-y-2">
-        <Skeleton className="h-8 w-[280px]" />
-        <Skeleton className="h-4 w-[380px]" />
-      </div>
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <div className="container max-w-7xl mx-auto py-8 px-4 space-y-8">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-16 w-16 rounded-2xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-[280px]" />
+              <Skeleton className="h-4 w-[200px]" />
+            </div>
+          </div>
+          <Skeleton className="h-10 w-[160px]" />
+        </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -69,24 +76,25 @@ export default function MentorDashboardLoading() {
         </Card>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-[200px]" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-[250px] w-full rounded-lg" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-[180px]" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-[250px] w-full rounded-lg" />
-          </CardContent>
-        </Card>
+        {/* Charts Section */}
+        <div className="grid lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-[200px]" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-[250px] w-full rounded-lg" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-[180px]" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-[250px] w-full rounded-lg" />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function AdminDashboardLoading() {
   return (
-    <div className="container py-8 space-y-8">
+    <div className="container max-w-7xl mx-auto py-8 px-4 space-y-8">
       {/* Header */}
       <div className="space-y-2">
         <Skeleton className="h-8 w-[250px]" />
