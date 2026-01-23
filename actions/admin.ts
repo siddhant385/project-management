@@ -314,3 +314,267 @@ export async function getRecentActivity(limit: number = 10) {
     recentProjects: recentProjects || [],
   };
 }
+
+// ---------------------------------------------------------
+// 8. GET ALL PROJECTS (Admin)
+// ---------------------------------------------------------
+export interface AdminProject {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  is_featured: boolean;
+  created_at: string;
+  initiator: {
+    id: string;
+    full_name: string;
+    email: string;
+  } | null;
+  _count?: {
+    applications: number;
+    tasks: number;
+  };
+}
+
+export async function getAllProjects(
+  page: number = 1,
+  limit: number = 10,
+  statusFilter?: string,
+  searchQuery?: string
+): Promise<{ projects: AdminProject[]; total: number }> {
+  const supabase = await createClient();
+  
+  if (!(await isAdmin())) {
+    throw new Error("Unauthorized: Admin access required");
+  }
+
+  const offset = (page - 1) * limit;
+
+  let query = supabase
+    .from("projects")
+    .select(`
+      id, title, description, status, is_featured, created_at,
+      initiator:profiles!initiator_id(id, full_name, email)
+    `, { count: "exact" });
+
+  if (statusFilter && statusFilter !== "all") {
+    query = query.eq("status", statusFilter);
+  }
+
+  if (searchQuery) {
+    query = query.ilike("title", `%${searchQuery}%`);
+  }
+
+  const { data, count, error } = await query
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) {
+    console.error("Error fetching projects:", error);
+    throw new Error("Failed to fetch projects");
+  }
+
+  return {
+    projects: (data as unknown as AdminProject[]) || [],
+    total: count || 0,
+  };
+}
+
+// ---------------------------------------------------------
+// 9. TOGGLE PROJECT FEATURED
+// ---------------------------------------------------------
+export async function toggleProjectFeatured(
+  projectId: string,
+  isFeatured: boolean
+): Promise<{ success?: string; error?: string }> {
+  const supabase = await createClient();
+  
+  if (!(await isAdmin())) {
+    return { error: "Unauthorized: Admin access required" };
+  }
+
+  const { error } = await supabase
+    .from("projects")
+    .update({ is_featured: isFeatured, updated_at: new Date().toISOString() })
+    .eq("id", projectId);
+
+  if (error) {
+    console.error("Error toggling featured:", error);
+    return { error: "Failed to update project" };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/projects");
+  return { success: isFeatured ? "Project is now featured" : "Project removed from featured" };
+}
+
+// ---------------------------------------------------------
+// 10. CHANGE PROJECT STATUS
+// ---------------------------------------------------------
+export async function changeProjectStatus(
+  projectId: string,
+  newStatus: string
+): Promise<{ success?: string; error?: string }> {
+  const supabase = await createClient();
+  
+  if (!(await isAdmin())) {
+    return { error: "Unauthorized: Admin access required" };
+  }
+
+  const { error } = await supabase
+    .from("projects")
+    .update({ status: newStatus, updated_at: new Date().toISOString() })
+    .eq("id", projectId);
+
+  if (error) {
+    console.error("Error changing status:", error);
+    return { error: "Failed to update project status" };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/projects");
+  return { success: `Project status changed to ${newStatus}` };
+}
+
+// ---------------------------------------------------------
+// 11. DELETE PROJECT
+// ---------------------------------------------------------
+export async function deleteProject(
+  projectId: string
+): Promise<{ success?: string; error?: string }> {
+  const supabase = await createClient();
+  
+  if (!(await isAdmin())) {
+    return { error: "Unauthorized: Admin access required" };
+  }
+
+  const { error } = await supabase
+    .from("projects")
+    .delete()
+    .eq("id", projectId);
+
+  if (error) {
+    console.error("Error deleting project:", error);
+    return { error: "Failed to delete project" };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/projects");
+  return { success: "Project deleted successfully" };
+}
+
+// ---------------------------------------------------------
+// 12. GET ANNOUNCEMENTS
+// ---------------------------------------------------------
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  is_active: boolean;
+  priority: "low" | "normal" | "high";
+  created_at: string;
+  expires_at: string | null;
+}
+
+export async function getAnnouncements(): Promise<Announcement[]> {
+  const supabase = await createClient();
+  
+  const { data, error } = await supabase
+    .from("announcements")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching announcements:", error);
+    return [];
+  }
+
+  return (data as Announcement[]) || [];
+}
+
+// ---------------------------------------------------------
+// 13. CREATE ANNOUNCEMENT
+// ---------------------------------------------------------
+export async function createAnnouncement(data: {
+  title: string;
+  content: string;
+  priority: "low" | "normal" | "high";
+  expires_at?: string;
+}): Promise<{ success?: string; error?: string }> {
+  const supabase = await createClient();
+  
+  if (!(await isAdmin())) {
+    return { error: "Unauthorized: Admin access required" };
+  }
+
+  const { error } = await supabase
+    .from("announcements")
+    .insert({
+      title: data.title,
+      content: data.content,
+      priority: data.priority,
+      is_active: true,
+      expires_at: data.expires_at || null,
+    });
+
+  if (error) {
+    console.error("Error creating announcement:", error);
+    return { error: "Failed to create announcement" };
+  }
+
+  revalidatePath("/admin");
+  return { success: "Announcement created successfully" };
+}
+
+// ---------------------------------------------------------
+// 14. TOGGLE ANNOUNCEMENT
+// ---------------------------------------------------------
+export async function toggleAnnouncement(
+  announcementId: string,
+  isActive: boolean
+): Promise<{ success?: string; error?: string }> {
+  const supabase = await createClient();
+  
+  if (!(await isAdmin())) {
+    return { error: "Unauthorized: Admin access required" };
+  }
+
+  const { error } = await supabase
+    .from("announcements")
+    .update({ is_active: isActive })
+    .eq("id", announcementId);
+
+  if (error) {
+    console.error("Error toggling announcement:", error);
+    return { error: "Failed to update announcement" };
+  }
+
+  revalidatePath("/admin");
+  return { success: isActive ? "Announcement activated" : "Announcement deactivated" };
+}
+
+// ---------------------------------------------------------
+// 15. DELETE ANNOUNCEMENT
+// ---------------------------------------------------------
+export async function deleteAnnouncement(
+  announcementId: string
+): Promise<{ success?: string; error?: string }> {
+  const supabase = await createClient();
+  
+  if (!(await isAdmin())) {
+    return { error: "Unauthorized: Admin access required" };
+  }
+
+  const { error } = await supabase
+    .from("announcements")
+    .delete()
+    .eq("id", announcementId);
+
+  if (error) {
+    console.error("Error deleting announcement:", error);
+    return { error: "Failed to delete announcement" };
+  }
+
+  revalidatePath("/admin");
+  return { success: "Announcement deleted successfully" };
+}
