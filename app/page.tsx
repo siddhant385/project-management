@@ -157,7 +157,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Features - Minimal Grid */}
+      {/* Features - Vertical Timeline */}
       <section className="py-16 lg:py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
@@ -167,27 +167,131 @@ export default async function Home() {
             </p>
           </div>
           
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
-            <FeatureItem 
-              icon={<Rocket className="h-5 w-5" />}
-              title="Create Project"
-              description="Define scope, add team members"
-            />
-            <FeatureItem 
-              icon={<GraduationCap className="h-5 w-5" />}
-              title="Get Mentor"
-              description="Faculty approves & guides"
-            />
-            <FeatureItem 
-              icon={<GitBranch className="h-5 w-5" />}
-              title="Track Progress"
-              description="Milestones, tasks, deadlines"
-            />
-            <FeatureItem 
-              icon={<Trophy className="h-5 w-5" />}
-              title="Complete & Showcase"
-              description="Build your portfolio"
-            />
+          <div className="max-w-2xl mx-auto">
+            {/* Timeline Container */}
+            <div className="relative">
+              {/* Vertical Line */}
+              <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-primary to-muted hidden sm:block" />
+              
+              {/* Timeline Items */}
+              <div className="space-y-8 sm:space-y-12">
+                {/* Step 1 */}
+                <div className="relative flex gap-6 sm:gap-8">
+                  {/* Timeline Dot */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm z-10 relative border-4 border-background shadow-md">
+                      1
+                    </div>
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="flex-1 pt-1">
+                    <Card className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-3 mb-2">
+                          <div className="inline-flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 text-primary">
+                            <Rocket className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-base">Create Project</h3>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Define your project scope, add description, and invite team members to collaborate
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="relative flex gap-6 sm:gap-8">
+                  {/* Timeline Dot */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm z-10 relative border-4 border-background shadow-md">
+                      2
+                    </div>
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="flex-1 pt-1">
+                    <Card className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-3 mb-2">
+                          <div className="inline-flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 text-primary">
+                            <GraduationCap className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-base">Get Mentor</h3>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Submit your project for faculty review. A mentor will guide and supervise your work
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="relative flex gap-6 sm:gap-8">
+                  {/* Timeline Dot */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm z-10 relative border-4 border-background shadow-md">
+                      3
+                    </div>
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="flex-1 pt-1">
+                    <Card className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-3 mb-2">
+                          <div className="inline-flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 text-primary">
+                            <GitBranch className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-base">Track Progress</h3>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Break down work into milestones and tasks. Track deadlines and stay on schedule
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
+                {/* Step 4 */}
+                <div className="relative flex gap-6 sm:gap-8">
+                  {/* Timeline Dot */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm z-10 relative border-4 border-background shadow-md">
+                      4
+                    </div>
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="flex-1 pt-1">
+                    <Card className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-3 mb-2">
+                          <div className="inline-flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 text-primary">
+                            <Trophy className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-base">Complete & Showcase</h3>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Finish your project, get evaluated, and build your professional portfolio
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
