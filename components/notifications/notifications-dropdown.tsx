@@ -2,13 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { 
-  getNotifications, 
-  getUnreadCount, 
-  markAsRead, 
-  markAllAsRead 
-} from "@/actions/notifications";
+import { createClient } from "@/lib/supabase/client"; 
+// 👇 Dhyan rakhna path sahi ho jahan 'realtime.ts' rakha hai
+import { useRealtimeNotifications } from "@/lib/supabase/realtime"; // ya "@/lib/realtime" check kar lena
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -21,22 +17,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Bell, CheckCheck, Loader2 } from "lucide-react";
 
-interface Notification {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  link: string | null;
-  is_read: boolean;
-  created_at: string;
-}
-
-// Simple time ago function
+// Time Ago function same rahega
 function timeAgo(dateString: string): string {
   const date = new Date(dateString);
   const now = new Date();
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
   if (seconds < 60) return "just now";
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;
@@ -49,46 +34,34 @@ function timeAgo(dateString: string): string {
 
 export function NotificationsDropdown() {
   const router = useRouter();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
+  // 1. User ID nikalo taaki Hook start ho sake
   useEffect(() => {
-    loadNotifications();
-    // Poll for new notifications every 30 seconds
-    const interval = setInterval(loadUnreadCount, 30000);
-    return () => clearInterval(interval);
+    const getUser = async () => {
+      const supabase = createClient();
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) {
+        setUserId(data.user.id);
+      }
+    };
+    getUser();
   }, []);
 
-  async function loadNotifications() {
-    try {
-      const data = await getNotifications();
-      setNotifications(data);
-      setUnreadCount(data.filter((n: Notification) => !n.is_read).length);
-    } catch (error) {
-      console.error("Failed to load notifications:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // 2. 🔥 MAIN MAGIC: Hook ko connect kiya
+  // Ab polling ki zarurat nahi, ye apne aap update hoga
+  const { 
+    notifications, 
+    unreadCount, 
+    markAsRead, 
+    markAllAsRead 
+  } = useRealtimeNotifications(userId || "");
 
-  async function loadUnreadCount() {
-    try {
-      const count = await getUnreadCount();
-      setUnreadCount(count);
-    } catch (error) {
-      console.error("Failed to load unread count:", error);
-    }
-  }
-
-  async function handleNotificationClick(notification: Notification) {
+  // Click Handler
+  async function handleNotificationClick(notification: any) {
     if (!notification.is_read) {
       await markAsRead(notification.id);
-      setNotifications(prev =>
-        prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n)
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
     }
     
     if (notification.link) {
@@ -97,31 +70,15 @@ export function NotificationsDropdown() {
     }
   }
 
-  async function handleMarkAllAsRead() {
-    try {
-      await markAllAsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-      setUnreadCount(0);
-      toast.success("All notifications marked as read");
-    } catch (error) {
-      toast.error("Failed to mark notifications as read");
-    }
-  }
-
+  // Icons Helper
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case "application_received":
-        return "📥";
-      case "application_accepted":
-        return "✅";
-      case "application_rejected":
-        return "❌";
-      case "project_completed":
-        return "🎉";
-      case "review_received":
-        return "⭐";
-      default:
-        return "📢";
+      case "application_received": return "📥";
+      case "application_accepted": return "✅";
+      case "application_rejected": return "❌";
+      case "project_completed": return "🎉";
+      case "review_received": return "⭐";
+      default: return "📢";
     }
   };
 
@@ -140,6 +97,7 @@ export function NotificationsDropdown() {
           )}
         </Button>
       </DropdownMenuTrigger>
+      
       <DropdownMenuContent align="end" className="w-80">
         <DropdownMenuLabel className="flex items-center justify-between">
           <span>Notifications</span>
@@ -147,7 +105,7 @@ export function NotificationsDropdown() {
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={handleMarkAllAsRead}
+              onClick={() => markAllAsRead()}
               className="h-auto py-1 px-2 text-xs"
             >
               <CheckCheck className="h-3 w-3 mr-1" /> Mark all read
@@ -156,7 +114,8 @@ export function NotificationsDropdown() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        {loading ? (
+        {/* Loading State: Jab tak userId nahi aata */}
+        {!userId ? (
           <div className="p-4 text-center">
             <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
           </div>
@@ -165,50 +124,35 @@ export function NotificationsDropdown() {
             No notifications yet
           </div>
         ) : (
-          <>
-            {/* Scrollable notifications list */}
-            <div className="max-h-[350px] overflow-y-auto scrollbar-thin">
-              {notifications.slice(0, 20).map((notification) => (
-                <DropdownMenuItem
-                  key={notification.id}
-                  className={`flex items-start gap-3 p-3 cursor-pointer border-b border-border/50 last:border-0 ${
-                    !notification.is_read ? "bg-primary/5" : ""
-                  }`}
-                  onClick={() => handleNotificationClick(notification)}
-                >
-                  <span className="text-lg flex-shrink-0 mt-0.5">
-                    {getNotificationIcon(notification.type)}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm leading-tight ${!notification.is_read ? "font-semibold" : ""}`}>
-                      {notification.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
-                      {notification.message}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      {timeAgo(notification.created_at)}
-                    </p>
-                  </div>
-                  {!notification.is_read && (
-                    <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1.5 animate-pulse" />
-                  )}
-                </DropdownMenuItem>
-              ))}
-            </div>
-            
-            {/* Footer with count */}
-            {notifications.length > 20 && (
-              <>
-                <DropdownMenuSeparator />
-                <div className="p-2 text-center">
-                  <p className="text-xs text-muted-foreground">
-                    Showing 20 of {notifications.length} notifications
+          <div className="max-h-[350px] overflow-y-auto scrollbar-thin">
+            {notifications.map((notification) => (
+              <DropdownMenuItem
+                key={notification.id}
+                className={`flex items-start gap-3 p-3 cursor-pointer border-b border-border/50 last:border-0 ${
+                  !notification.is_read ? "bg-primary/5" : ""
+                }`}
+                onClick={() => handleNotificationClick(notification)}
+              >
+                <span className="text-lg flex-shrink-0 mt-0.5">
+                  {getNotificationIcon(notification.type)}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm leading-tight ${!notification.is_read ? "font-semibold" : ""}`}>
+                    {notification.title}
+                  </p>
+                  <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                    {notification.message}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {timeAgo(notification.created_at)}
                   </p>
                 </div>
-              </>
-            )}
-          </>
+                {!notification.is_read && (
+                  <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1.5 animate-pulse" />
+                )}
+              </DropdownMenuItem>
+            ))}
+          </div>
         )}
       </DropdownMenuContent>
     </DropdownMenu>
