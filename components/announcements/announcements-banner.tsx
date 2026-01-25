@@ -11,6 +11,7 @@ interface AnnouncementsBannerProps {
   announcements: PublicAnnouncement[];
 }
 
+// 1. UI Styling Config (Same as before)
 const typeConfig = {
   info: {
     icon: Info,
@@ -38,13 +39,19 @@ const typeConfig = {
   },
 };
 
+// 2. NEW: Bridge Mapping (Database Priority -> UI Type)
+const priorityMap: Record<string, keyof typeof typeConfig> = {
+  low: "info",
+  normal: "success", // Normal ko Green dikhaya hai (Blue chahiye to 'info' kar dena)
+  high: "urgent",
+};
+
 export function AnnouncementsBanner({ announcements }: AnnouncementsBannerProps) {
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    // Load dismissed announcements from localStorage
     const dismissed = localStorage.getItem("dismissedAnnouncements");
     if (dismissed) {
       setDismissedIds(new Set(JSON.parse(dismissed)));
@@ -67,7 +74,9 @@ export function AnnouncementsBanner({ announcements }: AnnouncementsBannerProps)
   return (
     <div className="space-y-3 mb-6">
       {visibleAnnouncements.map((announcement) => {
-        const config = typeConfig[announcement.type];
+        // 3. FIX: Mapping logic use kiya
+        const uiType = priorityMap[announcement.priority] || "info";
+        const config = typeConfig[uiType];
         const Icon = config.icon;
 
         return (
@@ -85,8 +94,9 @@ export function AnnouncementsBanner({ announcements }: AnnouncementsBannerProps)
                     <h4 className={`font-semibold text-sm ${config.textColor}`}>
                       {announcement.title}
                     </h4>
-                    <Badge variant="outline" className={`text-xs ${config.badgeColor} border-0`}>
-                      {announcement.type}
+                    {/* Badge mein ab Priority dikhegi (Capitalized) */}
+                    <Badge variant="outline" className={`text-xs ${config.badgeColor} border-0 capitalize`}>
+                      {announcement.priority}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground line-clamp-2">
@@ -123,7 +133,8 @@ export function AnnouncementsCompact({ announcements }: AnnouncementsBannerProps
 
   if (announcements.length === 0) return null;
 
-  const urgentCount = announcements.filter((a) => a.type === "urgent").length;
+  // 4. FIX: Count logic updated (priority check)
+  const urgentCount = announcements.filter((a) => a.priority === "high").length;
 
   return (
     <div className="relative">
@@ -160,7 +171,9 @@ export function AnnouncementsCompact({ announcements }: AnnouncementsBannerProps
             </div>
             <div className="max-h-80 overflow-y-auto">
               {announcements.map((announcement) => {
-                const config = typeConfig[announcement.type];
+                // 5. FIX: Same mapping logic here
+                const uiType = priorityMap[announcement.priority] || "info";
+                const config = typeConfig[uiType];
                 const Icon = config.icon;
 
                 return (

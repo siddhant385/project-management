@@ -203,25 +203,69 @@ export async function rejectApplication(applicationId: string, projectId: string
 }
 
 // 7. REMOVE TEAM MEMBER
+// export async function removeMember(memberId: string, projectId: string) {
+//   const supabase = await createClient()
+//   const { data: { user } } = await supabase.auth.getUser()
+
+//   // Check if current user is owner
+//   const { data: project } = await supabase
+//     .from('projects')
+//     .select('initiator_id')
+//     .eq('id', projectId)
+//     .single()
+
+//   if (project?.initiator_id !== user?.id) throw new Error('Only owner can remove members')
+
+//   const { error } = await supabase
+//     .from('project_members')
+//     .delete()
+//     .eq('id', memberId)
+
+//   if (error) throw new Error('Failed to remove member')
+
+//   revalidatePath(`/projects/${projectId}`)
+// }
+
 export async function removeMember(memberId: string, projectId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Check if current user is owner
+  // 1. Owner Check (Existing logic)
   const { data: project } = await supabase
     .from('projects')
     .select('initiator_id')
     .eq('id', projectId)
     .single()
 
-  if (project?.initiator_id !== user?.id) throw new Error('Only owner can remove members')
+  if (project?.initiator_id !== user?.id) {
+    throw new Error('Only owner can remove members')
+  }
+  const { data: memberData, error: fetchError } = await supabase
+    .from('project_members')
+    .select('user_id')
+    .eq('id', memberId)
+    .single()
 
-  const { error } = await supabase
+  if (fetchError || !memberData) {
+    throw new Error('Member not found')
+  }
+
+  const userIdToRemove = memberData.user_id
+  const { error: deleteMemberError } = await supabase
     .from('project_members')
     .delete()
     .eq('id', memberId)
 
-  if (error) throw new Error('Failed to remove member')
+  if (deleteMemberError) throw new Error('Failed to remove member')
+  const { error: deleteAppError } = await supabase
+    .from('project_applications')
+    .delete()
+    .eq('project_id', projectId)
+    .eq('applicant_id', userIdToRemove) // Yahan 'memberId' nahi, 'user_id' chalega
+
+  if (deleteAppError) {
+    console.error("Failed to delete application record:", deleteAppError)
+  }
 
   revalidatePath(`/projects/${projectId}`)
 }

@@ -116,7 +116,83 @@ export function useRealtimeMilestones(projectId: string) {
 }
 
 // Hook for realtime notifications
+// export function useRealtimeNotifications(userId: string) {
+//   const [notifications, setNotifications] = useState<any[]>([]);
+//   const [unreadCount, setUnreadCount] = useState(0);
+//   const supabase = createClient();
+
+//   useEffect(() => {
+//     if (!userId) return;
+
+//     // Initial fetch
+//     const fetchNotifications = async () => {
+//       const { data } = await supabase
+//         .from("notifications")
+//         .select("*")
+//         .eq("user_id", userId)
+//         .order("created_at", { ascending: false })
+//         .limit(20);
+      
+//       if (data) {
+//         setNotifications(data);
+//         setUnreadCount(data.filter((n) => !n.read).length);
+//       }
+//     };
+
+//     fetchNotifications();
+
+//     // Subscribe to realtime changes
+//     const channel = supabase
+//       .channel(`notifications:${userId}`)
+//       .on(
+//         "postgres_changes",
+//         {
+//           event: "INSERT",
+//           schema: "public",
+//           table: "notifications",
+//           filter: `user_id=eq.${userId}`,
+//         },
+//         (payload) => {
+//           setNotifications((prev) => [payload.new, ...prev].slice(0, 20));
+//           setUnreadCount((prev) => prev + 1);
+//         }
+//       )
+//       .subscribe();
+
+//     return () => {
+//       supabase.removeChannel(channel);
+//     };
+//   }, [userId]);
+
+//   const markAsRead = useCallback(async (notificationId: string) => {
+//     await supabase
+//       .from("notifications")
+//       .update({ read: true })
+//       .eq("id", notificationId);
+    
+//     setNotifications((prev) =>
+//       prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+//     );
+//     setUnreadCount((prev) => Math.max(0, prev - 1));
+//   }, []);
+
+//   const markAllAsRead = useCallback(async () => {
+//     await supabase
+//       .from("notifications")
+//       .update({ read: true })
+//       .eq("user_id", userId)
+//       .eq("read", false);
+    
+//     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+//     setUnreadCount(0);
+//   }, [userId]);
+
+//   return { notifications, unreadCount, markAsRead, markAllAsRead };
+// }
+
+
 export function useRealtimeNotifications(userId: string) {
+  // ✅ Type 'any' ki jagah thoda structure de diya taaki confusion na ho
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const supabase = createClient();
@@ -135,7 +211,8 @@ export function useRealtimeNotifications(userId: string) {
       
       if (data) {
         setNotifications(data);
-        setUnreadCount(data.filter((n) => !n.read).length);
+        // ✅ FIX: 'read' ko 'is_read' kiya
+        setUnreadCount(data.filter((n) => !n.is_read).length);
       }
     };
 
@@ -153,8 +230,14 @@ export function useRealtimeNotifications(userId: string) {
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          setNotifications((prev) => [payload.new, ...prev].slice(0, 20));
-          setUnreadCount((prev) => prev + 1);
+          // Naya notification aaya
+          const newNotif = payload.new;
+          setNotifications((prev) => [newNotif, ...prev].slice(0, 20));
+          
+          // ✅ FIX: Agar naya msg unread hai to count badhao
+          if (!newNotif.is_read) {
+            setUnreadCount((prev) => prev + 1);
+          }
         }
       )
       .subscribe();
@@ -167,11 +250,12 @@ export function useRealtimeNotifications(userId: string) {
   const markAsRead = useCallback(async (notificationId: string) => {
     await supabase
       .from("notifications")
-      .update({ read: true })
+      .update({ is_read: true }) // ✅ FIX: DB column name
       .eq("id", notificationId);
     
     setNotifications((prev) =>
-      prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+      // ✅ FIX: Local state update
+      prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
     );
     setUnreadCount((prev) => Math.max(0, prev - 1));
   }, []);
@@ -179,11 +263,11 @@ export function useRealtimeNotifications(userId: string) {
   const markAllAsRead = useCallback(async () => {
     await supabase
       .from("notifications")
-      .update({ read: true })
+      .update({ is_read: true }) // ✅ FIX
       .eq("user_id", userId)
-      .eq("read", false);
+      .eq("is_read", false);     // ✅ FIX
     
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
     setUnreadCount(0);
   }, [userId]);
 
