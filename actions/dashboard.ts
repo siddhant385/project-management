@@ -17,11 +17,12 @@ export async function getPublicStats() {
     .select('*', { count: 'exact', head: true })
     .eq('status', 'in_progress')
   
-  // Completed Projects
+  // Completed Projects (Evaluated or Submitted)
+  // FIX: User ke hisab se 'completed' status nahi hai, 'evaluated' ya 'submitted' hai
   const { count: completedProjects } = await supabase
     .from('projects')
     .select('*', { count: 'exact', head: true })
-    .eq('status', 'completed')
+    .in('status', ['evaluated', 'submitted']) 
   
   // Total Students
   const { count: totalStudents } = await supabase
@@ -93,7 +94,6 @@ export async function getDashboardStats() {
     }
   }
   
-  // RPC kabhi kabhi array return karta hai, safe side ke liye check:
   const stats = Array.isArray(data) ? data[0] : data
   return stats
 }
@@ -108,7 +108,7 @@ export async function getUserProjects() {
   // A. Projects I Created (Owner)
   const { data: owned } = await supabase
     .from('projects')
-    .select('*, initiator:profiles!initiator_id(full_name)') // Initiator name bhi le aate hain
+    .select('*, initiator:profiles!initiator_id(full_name)')
     .eq('initiator_id', user.id)
     .order('created_at', { ascending: false })
 
@@ -123,10 +123,10 @@ export async function getUserProjects() {
     `) 
     .eq('user_id', user.id)
 
-  // FIX: Null safety + Flattening
+  // FIX: Filter out projects where I am the initiator to avoid duplicates
   const joined = memberProjects
     ?.map((p: any) => p.project)
-    .filter((p: any) => p !== null) || []
+    .filter((p: any) => p !== null && p.initiator_id !== user.id) || []
 
   return {
     owned: owned || [],
@@ -166,9 +166,10 @@ export async function getStudentDashboardData() {
     `) 
     .eq('user_id', user.id)
 
+  // FIX: Filter duplicates here too
   const joined = memberProjects
     ?.map((p: any) => p.project)
-    .filter((p: any) => p !== null) || []
+    .filter((p: any) => p !== null && p.initiator_id !== user.id) || []
 
   // Get all project IDs user is involved in
   const allProjectIds = [
@@ -201,6 +202,7 @@ export async function getStudentDashboardData() {
       .or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`)
       .in('project_id', allProjectIds)
 
+    // Note: Tasks status usually has 'completed' or 'done', keeping 'completed' as per standard Task logic
     taskStats.pending = allTasks?.filter(t => t.status !== 'completed').length || 0
     taskStats.completed = allTasks?.filter(t => t.status === 'completed').length || 0
   }
@@ -227,10 +229,9 @@ export async function getStudentDashboardData() {
     upcomingMilestones = milestones || []
   }
 
-  // E. Recent Activity (task completions, milestone updates)
+  // E. Recent Activity
   let recentActivity: any[] = []
   if (allProjectIds.length > 0) {
-    // Get recent milestone activities
     const { data: activities } = await supabase
       .from('milestone_activities')
       .select(`
@@ -241,7 +242,6 @@ export async function getStudentDashboardData() {
       .order('created_at', { ascending: false })
       .limit(10)
 
-    // Filter activities for user's projects
     recentActivity = (activities || []).filter((a: any) => 
       a.milestone && allProjectIds.includes(a.milestone.project_id)
     ).slice(0, 5)
@@ -265,7 +265,7 @@ export async function getStudentDashboardData() {
   }
 }
 
-// 3. Mentor Dashboard Data (UPDATED FOR NEW UI 🚀)
+// 3. Mentor Dashboard Data (UPDATED)
 export async function getMentorDashboardData() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -298,29 +298,28 @@ export async function getMentorDashboardData() {
     requests = data || []
   }
 
-  // C. NEW: Fetch Open Projects (Seeking Mentor)
-  // Logic: Status 'open' ho aur abhi tak koi 'final_mentor_id' na ho
+  // C. Fetch Open Projects (Seeking Mentor)
   const { data: openProjects } = await supabase
     .from('projects')
     .select('*, initiator:profiles!initiator_id(full_name, department)')
-    .is('final_mentor_id', null) // Jiska koi mentor nahi
+    .is('final_mentor_id', null)
     .eq('status', 'open')
-    .neq('initiator_id', user.id) // Apna khud ka project na dikhaye
-    .limit(5) // Top 5 dikhao discovery ke liye
+    .neq('initiator_id', user.id)
+    .limit(5)
 
-  // D. NEW: Calculate Stats for Top Cards
+  // D. Stats
   const stats = {
     total_mentees: assignedProjects?.length || 0,
     pending_reviews: requests.length,
-    // Count projects marked as evaluated/completed
-    projects_completed: assignedProjects?.filter((p: any) => p.status === 'evaluated' || p.status === 'completed').length || 0
+    // FIX: Using 'evaluated' or 'submitted' for completed status
+    projects_completed: assignedProjects?.filter((p: any) => p.status === 'evaluated' || p.status === 'submitted').length || 0
   }
 
   return {
     assigned_projects: assignedProjects || [],
     pending_reviews: requests,
-    open_projects: openProjects || [], // New Return
-    stats // New Return
+    open_projects: openProjects || [],
+    stats
   }
 }
 
@@ -331,7 +330,7 @@ export async function getMentorChartData() {
   
   if (!user) return { performanceData: [], activityData: [] }
 
-  // A. Get all mentor's projects with milestones and tasks
+  // A. Get all mentor's projects
   const { data: projects } = await supabase
     .from('projects')
     .select(`
@@ -347,25 +346,27 @@ export async function getMentorChartData() {
     return { performanceData: [], activityData: [] }
   }
 
-  // B. Get milestones for all projects
+  // B. Get milestones
   const { data: milestones } = await supabase
     .from('milestones')
     .select('id, project_id, status, progress')
     .in('project_id', projectIds)
 
-  // C. Get tasks for all projects
+  // C. Get tasks
   const { data: tasks } = await supabase
     .from('tasks')
     .select('id, project_id, status')
     .in('project_id', projectIds)
 
-  // D. Calculate performance data for each project
+  // D. Calculate performance data
   const performanceData = projects?.map(project => {
     const projectMilestones = milestones?.filter(m => m.project_id === project.id) || []
     const projectTasks = tasks?.filter(t => t.project_id === project.id) || []
     
+    // Milestones usually use 'completed' status, assuming that's consistent in your DB for milestones
     const completedMilestones = projectMilestones.filter(m => m.status === 'completed').length
-    const completedTasks = projectTasks.filter(t => t.status === 'done').length
+    // Tasks usually use 'completed' or 'done', check your task table enum. Assuming 'completed' based on previous context.
+    const completedTasks = projectTasks.filter(t => t.status === 'completed').length
     
     // Calculate overall progress
     let progress = 0
@@ -387,7 +388,7 @@ export async function getMentorChartData() {
     }
   }) || []
 
-  // E. Get activity data for heatmap (last 3 months)
+  // E. Activity Data (Heatmap)
   const threeMonthsAgo = new Date()
   threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
   
@@ -405,10 +406,6 @@ export async function getMentorChartData() {
     activities = activityData || []
   }
 
-  // Also get task updates (assuming we track when tasks are updated)
-  // For now, we'll just use milestone activities
-  
-  // F. Group activities by date for heatmap
   const activityMap = new Map<string, { count: number; activities: { type: string; description: string }[] }>()
   
   activities.forEach(activity => {

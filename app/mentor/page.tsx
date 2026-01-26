@@ -156,9 +156,11 @@ export default async function MentorDashboard() {
         .order('created_at', { ascending: false })
         .limit(10)
     : { data: [] }
-
   const activeProjects = assigned_projects.filter((p: any) => p.status === 'in_progress') || []
-  const completedProjects = assigned_projects.filter((p: any) => p.status === 'completed') || []
+  const completedProjects = assigned_projects.filter((p: any) => 
+    ['evaluated', 'submitted'].includes(p.status)
+  ) || []
+  // const completedProjects = assigned_projects.filter((p: any) => p.status === 'completed') || []
 
   // Calculate statistics
   const totalStudents = new Set(assigned_projects.map((p: any) => p.student_id || p.initiator?.id)).size

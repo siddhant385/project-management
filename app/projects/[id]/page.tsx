@@ -30,6 +30,10 @@ import { ReviewProjectDialog } from '@/components/project/review-project-dialog'
 import { RejectApplicationButton } from '@/components/project/reject-application-button'
 import { ApplyButton } from '@/components/project/apply-button'
 import { ProjectStatusSelect } from '@/components/project/project-status-select'
+import { 
+  RealtimeApplicationsList, 
+  RealtimeApplicationsBadge 
+} from '@/components/project/realtime-applications';
 
 // Task Components - Using Realtime version
 import { RealtimeTaskBoard } from '@/components/tasks'
@@ -117,7 +121,8 @@ export default async function ProjectPage({ params }: Props) {
            )}
 
            {/* VISITOR ACTIONS (Apply Logic) */}
-           {!userRole.isOwner && !userRole.isMember && !userRole.hasApplied && project.status === 'open' && (
+           {!userRole.isOwner && !userRole.isMember && !userRole.hasApplied && project.status === 'open' && 
+           !(userRole.isMentor && project.final_mentor_id) &&(
              <ApplyButton projectId={project.id} projectTitle={project.title} />
            )}
 
@@ -147,7 +152,16 @@ export default async function ProjectPage({ params }: Props) {
           <TabsTrigger value="tasks" className="text-xs md:text-sm">Tasks</TabsTrigger>
           <TabsTrigger value="team" className="text-xs md:text-sm">Team</TabsTrigger>
           <TabsTrigger value="files" className="text-xs md:text-sm">Files</TabsTrigger>
-          {userRole.isOwner && <TabsTrigger value="applications" className="text-xs md:text-sm">Requests</TabsTrigger>}
+          {userRole.isOwner && (
+            <TabsTrigger value="applications" className="text-xs md:text-sm flex items-center">
+              Requests
+              {/* 👇 Ye Realtime Badge hai */}
+              <RealtimeApplicationsBadge 
+                projectId={project.id} 
+                initialApplications={applications} 
+              />
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* --- TAB: OVERVIEW --- */}
@@ -231,6 +245,8 @@ export default async function ProjectPage({ params }: Props) {
           <RealtimeTimeline 
             projectId={project.id}
             initialMilestones={milestones}
+            projectTitle={project.title}
+            projectDescription={project.description}
             members={members.map((m: any) => ({
               user_id: m.user_id,
               profile: {
@@ -250,6 +266,7 @@ export default async function ProjectPage({ params }: Props) {
             projectTitle={project.title}
             projectDescription={project.description}
             initialTasks={tasks}
+            milestones={milestones}
             members={members.map((m: any) => ({
               user_id: m.user_id,
               profile: {
@@ -364,40 +381,11 @@ export default async function ProjectPage({ params }: Props) {
         {/* --- TAB: APPLICATIONS (Owner Only) --- */}
         {userRole.isOwner && (
           <TabsContent value="applications" className="mt-6">
-             <Card>
-               <CardHeader><CardTitle>Pending Requests</CardTitle></CardHeader>
-               <CardContent>
-                  {applications.length === 0 ? (
-                     <p className="text-muted-foreground text-sm">No pending applications.</p>
-                  ) : (
-                     <div className="space-y-4">
-                        {applications.map((app: any) => (
-                           <div key={app.id} className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded gap-4">
-                              <div>
-                                 <p className="font-medium">{app.applicant.full_name} <span className="text-xs text-muted-foreground">({app.applicant_role})</span></p>
-                                 <p className="text-sm text-muted-foreground italic">"{app.message}"</p>
-                                 <div className="flex gap-1 mt-1 flex-wrap">
-                                    {app.applicant.skills?.map((s: string) => (
-                                       <Badge key={s} variant="outline" className="text-[10px]">{s}</Badge>
-                                    ))}
-                                 </div>
-                              </div>
-                              <div className="flex gap-2">
-                                 <form action={acceptApplication.bind(null, app.id, project.id)}>
-                                    <Button size="sm">Accept</Button>
-                                 </form>
-                                 <RejectApplicationButton 
-                                   applicationId={app.id} 
-                                   applicantName={app.applicant.full_name}
-                                   projectId={project.id}
-                                 />
-                              </div>
-                           </div>
-                        ))}
-                     </div>
-                  )}
-               </CardContent>
-             </Card>
+            {/* 👇 Poora logic ab component handle karega */}
+            <RealtimeApplicationsList 
+              projectId={project.id} 
+              initialApplications={applications} 
+            />
           </TabsContent>
         )}
 

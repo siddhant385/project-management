@@ -2,12 +2,18 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { RealtimeChannel } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation"; // 👈 Router import kiya
 
 // Hook for realtime task updates
 export function useRealtimeTasks(projectId: string) {
   const [tasks, setTasks] = useState<any[]>([]);
   const supabase = createClient();
+  const router = useRouter(); // 👈 Router initialize
+
+  // Refresh helper
+  const refreshData = useCallback(() => {
+    router.refresh();
+  }, [router]);
 
   useEffect(() => {
     // Initial fetch
@@ -38,7 +44,8 @@ export function useRealtimeTasks(projectId: string) {
           table: "tasks",
           filter: `project_id=eq.${projectId}`,
         },
-        (payload) => {
+        async (payload) => {
+          // Update Local State for instant feedback
           if (payload.eventType === "INSERT") {
             setTasks((prev) => [...prev, payload.new]);
           } else if (payload.eventType === "UPDATE") {
@@ -48,6 +55,9 @@ export function useRealtimeTasks(projectId: string) {
           } else if (payload.eventType === "DELETE") {
             setTasks((prev) => prev.filter((t) => t.id !== payload.old.id));
           }
+          
+          // ⚡ Background Refresh (Taaki server data sync rahe)
+          refreshData();
         }
       )
       .subscribe();
@@ -55,7 +65,7 @@ export function useRealtimeTasks(projectId: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [projectId]);
+  }, [projectId, refreshData]);
 
   return { tasks, setTasks };
 }
@@ -64,6 +74,7 @@ export function useRealtimeTasks(projectId: string) {
 export function useRealtimeMilestones(projectId: string) {
   const [milestones, setMilestones] = useState<any[]>([]);
   const supabase = createClient();
+  const router = useRouter();
 
   useEffect(() => {
     // Initial fetch
@@ -82,7 +93,6 @@ export function useRealtimeMilestones(projectId: string) {
 
     fetchMilestones();
 
-    // Subscribe to realtime changes
     const channel = supabase
       .channel(`milestones:${projectId}`)
       .on(
@@ -103,6 +113,7 @@ export function useRealtimeMilestones(projectId: string) {
           } else if (payload.eventType === "DELETE") {
             setMilestones((prev) => prev.filter((m) => m.id !== payload.old.id));
           }
+          router.refresh(); // ⚡ Refresh
         }
       )
       .subscribe();
@@ -110,97 +121,21 @@ export function useRealtimeMilestones(projectId: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [projectId]);
+  }, [projectId, router]);
 
   return { milestones, setMilestones };
 }
 
 // Hook for realtime notifications
-// export function useRealtimeNotifications(userId: string) {
-//   const [notifications, setNotifications] = useState<any[]>([]);
-//   const [unreadCount, setUnreadCount] = useState(0);
-//   const supabase = createClient();
-
-//   useEffect(() => {
-//     if (!userId) return;
-
-//     // Initial fetch
-//     const fetchNotifications = async () => {
-//       const { data } = await supabase
-//         .from("notifications")
-//         .select("*")
-//         .eq("user_id", userId)
-//         .order("created_at", { ascending: false })
-//         .limit(20);
-      
-//       if (data) {
-//         setNotifications(data);
-//         setUnreadCount(data.filter((n) => !n.read).length);
-//       }
-//     };
-
-//     fetchNotifications();
-
-//     // Subscribe to realtime changes
-//     const channel = supabase
-//       .channel(`notifications:${userId}`)
-//       .on(
-//         "postgres_changes",
-//         {
-//           event: "INSERT",
-//           schema: "public",
-//           table: "notifications",
-//           filter: `user_id=eq.${userId}`,
-//         },
-//         (payload) => {
-//           setNotifications((prev) => [payload.new, ...prev].slice(0, 20));
-//           setUnreadCount((prev) => prev + 1);
-//         }
-//       )
-//       .subscribe();
-
-//     return () => {
-//       supabase.removeChannel(channel);
-//     };
-//   }, [userId]);
-
-//   const markAsRead = useCallback(async (notificationId: string) => {
-//     await supabase
-//       .from("notifications")
-//       .update({ read: true })
-//       .eq("id", notificationId);
-    
-//     setNotifications((prev) =>
-//       prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
-//     );
-//     setUnreadCount((prev) => Math.max(0, prev - 1));
-//   }, []);
-
-//   const markAllAsRead = useCallback(async () => {
-//     await supabase
-//       .from("notifications")
-//       .update({ read: true })
-//       .eq("user_id", userId)
-//       .eq("read", false);
-    
-//     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-//     setUnreadCount(0);
-//   }, [userId]);
-
-//   return { notifications, unreadCount, markAsRead, markAllAsRead };
-// }
-
-
 export function useRealtimeNotifications(userId: string) {
-  // ✅ Type 'any' ki jagah thoda structure de diya taaki confusion na ho
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const supabase = createClient();
+  const router = useRouter();
 
   useEffect(() => {
     if (!userId) return;
 
-    // Initial fetch
     const fetchNotifications = async () => {
       const { data } = await supabase
         .from("notifications")
@@ -211,14 +146,12 @@ export function useRealtimeNotifications(userId: string) {
       
       if (data) {
         setNotifications(data);
-        // ✅ FIX: 'read' ko 'is_read' kiya
         setUnreadCount(data.filter((n) => !n.is_read).length);
       }
     };
 
     fetchNotifications();
 
-    // Subscribe to realtime changes
     const channel = supabase
       .channel(`notifications:${userId}`)
       .on(
@@ -230,14 +163,12 @@ export function useRealtimeNotifications(userId: string) {
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          // Naya notification aaya
           const newNotif = payload.new;
           setNotifications((prev) => [newNotif, ...prev].slice(0, 20));
-          
-          // ✅ FIX: Agar naya msg unread hai to count badhao
           if (!newNotif.is_read) {
             setUnreadCount((prev) => prev + 1);
           }
+          router.refresh(); // ⚡ Refresh to show notification everywhere
         }
       )
       .subscribe();
@@ -245,87 +176,111 @@ export function useRealtimeNotifications(userId: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, router]);
 
   const markAsRead = useCallback(async (notificationId: string) => {
     await supabase
       .from("notifications")
-      .update({ is_read: true }) // ✅ FIX: DB column name
+      .update({ is_read: true })
       .eq("id", notificationId);
     
     setNotifications((prev) =>
-      // ✅ FIX: Local state update
       prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
     );
     setUnreadCount((prev) => Math.max(0, prev - 1));
-  }, []);
+    router.refresh();
+  }, [router]);
 
   const markAllAsRead = useCallback(async () => {
     await supabase
       .from("notifications")
-      .update({ is_read: true }) // ✅ FIX
+      .update({ is_read: true })
       .eq("user_id", userId)
-      .eq("is_read", false);     // ✅ FIX
+      .eq("is_read", false);
     
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
     setUnreadCount(0);
-  }, [userId]);
+    router.refresh();
+  }, [userId, router]);
 
   return { notifications, unreadCount, markAsRead, markAllAsRead };
 }
 
-// Hook for realtime project activity feed
-export function useRealtimeActivity(projectId: string) {
-  const [activities, setActivities] = useState<any[]>([]);
-  const supabase = createClient();
+// Hook for realtime applications (Requests) - THIS ONE FIXES YOUR ISSUE
+// realtime.ts
 
+// ... baki imports same ...
+
+export function useRealtimeApplications(projectId: string, initialData: any[] = []) {
+  const [applications, setApplications] = useState<any[]>(initialData);
+  const supabase = createClient();
+  const router = useRouter();
+
+  // 1. Sync with Server Data (Jab page refresh ho)
   useEffect(() => {
-    // Initial fetch of recent milestone activities
-    const fetchActivities = async () => {
+    setApplications(initialData);
+  }, [initialData]);
+
+  // 2. Fetch Fresh Data on Mount (Ye wala part missing tha!) [Cite: realtime.ts]
+  useEffect(() => {
+    const fetchApplications = async () => {
       const { data } = await supabase
-        .from("milestone_activities")
+        .from("project_applications")
         .select(`
           *,
-          milestone:milestones!milestone_activities_milestone_id_fkey(id, title, project_id),
-          user_profile:profiles!milestone_activities_user_id_fkey(id, full_name, avatar_url)
+          applicant:profiles!project_applications_applicant_id_fkey(full_name, avatar_url, roll_number, skills)
         `)
-        .order("created_at", { ascending: false })
-        .limit(20);
+        .eq("project_id", projectId);
       
-      // Filter for current project
-      const projectActivities = (data || []).filter(
-        (a) => a.milestone?.project_id === projectId
-      );
-      setActivities(projectActivities);
+      if (data) {
+        setApplications(data);
+      }
     };
 
-    fetchActivities();
+    fetchApplications();
+  }, [projectId]);
 
-    // Subscribe to new activities
+  // 3. Realtime Subscription
+  useEffect(() => {
     const channel = supabase
-      .channel(`activities:${projectId}`)
+      .channel(`applications:${projectId}`)
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
-          table: "milestone_activities",
+          table: "project_applications",
+          filter: `project_id=eq.${projectId}`,
         },
         async (payload) => {
-          // Fetch full activity with relations
-          const { data } = await supabase
-            .from("milestone_activities")
-            .select(`
-              *,
-              milestone:milestones!milestone_activities_milestone_id_fkey(id, title, project_id),
-              user_profile:profiles!milestone_activities_user_id_fkey(id, full_name, avatar_url)
-            `)
-            .eq("id", payload.new.id)
-            .single();
-          
-          if (data && data.milestone?.project_id === projectId) {
-            setActivities((prev) => [data, ...prev].slice(0, 20));
+          if (payload.eventType === "INSERT") {
+            const { data: newApp } = await supabase
+              .from("project_applications")
+              .select(`
+                *,
+                applicant:profiles!project_applications_applicant_id_fkey(full_name, avatar_url, roll_number, skills)
+              `)
+              .eq("id", payload.new.id)
+              .single();
+
+            if (newApp) {
+              setApplications((prev) => [newApp, ...prev]);
+            }
+          } 
+          else if (payload.eventType === "UPDATE") {
+            setApplications((prev) =>
+              prev.map((app) => 
+                app.id === payload.new.id ? { ...app, ...payload.new } : app
+              )
+            );
+          } 
+          else if (payload.eventType === "DELETE") {
+            setApplications((prev) => 
+              prev.filter((app) => app.id !== payload.old.id)
+            );
           }
+
+          router.refresh();
         }
       )
       .subscribe();
@@ -333,50 +288,7 @@ export function useRealtimeActivity(projectId: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [projectId]);
+  }, [projectId, router]);
 
-  return { activities };
-}
-
-// Generic presence hook for showing who's online
-export function usePresence(channelName: string, userId: string, userName: string) {
-  const [onlineUsers, setOnlineUsers] = useState<Array<{ id: string; name: string }>>([]);
-  const supabase = createClient();
-
-  useEffect(() => {
-    if (!userId || !userName) return;
-
-    const channel = supabase.channel(channelName, {
-      config: {
-        presence: {
-          key: userId,
-        },
-      },
-    });
-
-    channel
-      .on("presence", { event: "sync" }, () => {
-        const state = channel.presenceState();
-        const users = Object.values(state)
-          .flat()
-          .map((user: any) => ({ id: user.user_id, name: user.user_name }));
-        setOnlineUsers(users);
-      })
-      .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          await channel.track({
-            user_id: userId,
-            user_name: userName,
-            online_at: new Date().toISOString(),
-          });
-        }
-      });
-
-    return () => {
-      channel.untrack();
-      supabase.removeChannel(channel);
-    };
-  }, [channelName, userId, userName]);
-
-  return { onlineUsers };
+  return { applications };
 }

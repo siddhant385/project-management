@@ -12,8 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
-
-type ProjectStatus = "draft" | "open" | "in_progress" | "completed" | "archived";
+// open, mentor_assigned, in_progress, submitted, evaluated, rejected
+type ProjectStatus = "open" | "mentor_assigned" | "in_progress" | "submitted" | "evaluated" | "rejected";
 
 interface ProjectStatusSelectProps {
   projectId: string;
@@ -22,19 +22,23 @@ interface ProjectStatusSelectProps {
 }
 
 const statusLabels: Record<ProjectStatus, string> = {
-  draft: "Draft",
+  
   open: "Open for Applications",
+  mentor_assigned: "Mentor Assigned",
   in_progress: "In Progress",
-  completed: "Completed",
-  archived: "Archived",
+  evaluated: "Evaluated",
+  rejected: "Rejected",
+  submitted: "Submitted"
+
 };
 
 const statusColors: Record<ProjectStatus, string> = {
-  draft: "text-muted-foreground",
+  submitted: "text-muted-foreground",
+  mentor_assigned: "text-orange-600",
   open: "text-green-600",
   in_progress: "text-blue-600",
-  completed: "text-purple-600",
-  archived: "text-gray-600",
+  evaluated: "text-purple-600",
+  rejected: "text-red-600"
 };
 
 export function ProjectStatusSelect({ 
@@ -77,8 +81,11 @@ export function ProjectStatusSelect({
           )}
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="draft" className={statusColors.draft}>
-            {statusLabels.draft}
+          <SelectItem value="submitted" className={statusColors.submitted}>
+            {statusLabels.submitted}
+          </SelectItem>
+          <SelectItem value="mentor_assigned" className={statusColors.mentor_assigned}>
+            {statusLabels.mentor_assigned}
           </SelectItem>
           <SelectItem value="open" className={statusColors.open}>
             {statusLabels.open}
@@ -86,11 +93,11 @@ export function ProjectStatusSelect({
           <SelectItem value="in_progress" className={statusColors.in_progress}>
             {statusLabels.in_progress}
           </SelectItem>
-          <SelectItem value="completed" className={statusColors.completed}>
-            {statusLabels.completed}
+          <SelectItem value="evaluated" className={statusColors.evaluated}>
+            {statusLabels.evaluated}
           </SelectItem>
-          <SelectItem value="archived" className={statusColors.archived}>
-            {statusLabels.archived}
+          <SelectItem value="rejected" className={statusColors.rejected}>
+            {statusLabels.rejected}
           </SelectItem>
         </SelectContent>
       </Select>
