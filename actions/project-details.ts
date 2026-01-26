@@ -40,12 +40,12 @@ export async function getProjectDetails(projectId: string) {
   // Is current user already a member?
   const isMember = members?.some(m => m.user_id === user?.id)
 
-  if (project.status !== 'open' && !isOwner && !isMember && !isMentor) {
-    // Option A: 404 Not Found
-    notFound() 
-    // Option B: Redirect to Dashboard
-    // redirect('/dashboard') 
-  }
+  // if (project.status !== 'open' && !isOwner && !isMember && !isMentor) {
+  //   // Option A: 404 Not Found
+  //   notFound() 
+  //   // Option B: Redirect to Dashboard
+  //   // redirect('/dashboard') 
+  // }
 
   // 5. (Only for Owner) Fetch Pending Applications
   let applications = []

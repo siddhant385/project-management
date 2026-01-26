@@ -22,21 +22,25 @@ const getInitials = (name: string) => name?.substring(0, 2).toUpperCase() || 'U'
 
 // Status badge styling
 const statusStyles: Record<string, string> = {
-  open: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  mentor_assigned: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
-  completed: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
-  approved: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300',
-}
+  open: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  mentor_assigned: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+  in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  evaluated: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+  rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  submitted: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', // Muted foreground ke liye Gray best hai
+};
 
+// 2. Updated Options for Dropdown/Filter
+// Labels exactly wahi hain jo tune 'statusLabels' me diye
 const statusOptions = [
   { value: 'all', label: 'All Status' },
-  { value: 'open', label: 'Open' },
-  { value: 'in_progress', label: 'In Progress' },
+  { value: 'open', label: 'Open for Applications' },
   { value: 'mentor_assigned', label: 'Mentor Assigned' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'approved', label: 'Approved' },
-]
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'submitted', label: 'Submitted' },
+  { value: 'evaluated', label: 'Evaluated' },
+  { value: 'rejected', label: 'Rejected' },
+];
 
 type Props = {
   projects: any[]

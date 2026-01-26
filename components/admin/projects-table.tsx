@@ -59,19 +59,21 @@ interface ProjectsTableProps {
 }
 
 const statusBadgeColors: Record<string, string> = {
-  pending: "bg-yellow-500/10 text-yellow-500",
-  approved: "bg-blue-500/10 text-blue-500",
+  evaluated: "bg-yellow-500/10 text-yellow-500",
+  mentor_assigned: "bg-blue-500/10 text-blue-500",
   in_progress: "bg-purple-500/10 text-purple-500",
-  completed: "bg-green-500/10 text-green-500",
-  cancelled: "bg-red-500/10 text-red-500",
+  open: "bg-green-500/10 text-green-500",
+  rejected: "bg-red-500/10 text-red-500",
+  submitted: "bg-green-600/10 text-green-600"
 };
 
 const statusOptions = [
-  { value: "pending", label: "Pending" },
-  { value: "approved", label: "Approved" },
+  { value: "open", label: "Open For Applications" },
+  { value: "mentor_assigned", label: "Mentor Assigned" },
   { value: "in_progress", label: "In Progress" },
-  { value: "completed", label: "Completed" },
-  { value: "cancelled", label: "Cancelled" },
+  { value: "evaluated", label: "Evaluated" },
+  { value: "rejected", label: "Rejected" },
+  { value: "submitted", label: "Submitted" },
 ];
 
 export function ProjectsTable({ initialProjects, initialTotal }: ProjectsTableProps) {
@@ -128,14 +130,31 @@ export function ProjectsTable({ initialProjects, initialTotal }: ProjectsTablePr
   };
 
   const handleStatusChange = async (projectId: string, newStatus: string) => {
+    setProjects((prevProjects) =>
+      prevProjects.map((project) =>
+        project.id === projectId ? { ...project, status: newStatus } : project
+      )
+    );
+
     const result = await changeProjectStatus(projectId, newStatus);
+
     if (result.error) {
       toast.error(result.error);
+      fetchProjects(page, statusFilter, searchQuery);
     } else {
       toast.success(result.success);
       fetchProjects(page, statusFilter, searchQuery);
     }
   };
+  // const handleStatusChange = async (projectId: string, newStatus: string) => {
+  //   const result = await changeProjectStatus(projectId, newStatus);
+  //   if (result.error) {
+  //     toast.error(result.error);
+  //   } else {
+  //     toast.success(result.success);
+  //     fetchProjects(page, statusFilter, searchQuery);
+  //   }
+  // };
 
   const handleDeleteConfirm = async () => {
     if (!projectToDelete) return;
