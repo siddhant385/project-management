@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react"; // 👈 useCallback add kiya
 import { createClient } from "@/lib/supabase/client";
-import { Task, TaskStatus } from "@/actions/tasks";
+import { Task } from "@/actions/tasks";
 import { TaskBoard } from "./task-board";
+import { useRouter } from "next/navigation"; // 👈 useRouter add kiya
 
 interface RealtimeTaskBoardProps {
   projectId: string;
@@ -15,6 +16,7 @@ interface RealtimeTaskBoardProps {
     profile: { id: string; full_name: string; avatar_url: string | null } 
   }>;
   canEdit: boolean;
+  milestones: Array<{ id: string; title: string; description: string | null }>;
 }
 
 export function RealtimeTaskBoard({ 
@@ -23,13 +25,43 @@ export function RealtimeTaskBoard({
   projectDescription,
   initialTasks, 
   members, 
-  canEdit 
+  canEdit,
+  milestones 
 }: RealtimeTaskBoardProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const supabase = createClient();
+  const router = useRouter(); // 👈 Router initialize kiya
 
+  // 1. Data Refresh Function (Sabse important)
+  const refreshTasks = useCallback(async () => {
+    const { data } = await supabase
+      .from("tasks")
+      .select(`
+        *,
+        assignee:profiles!tasks_assigned_to_fkey(id, full_name, avatar_url),
+        creator:profiles!tasks_created_by_fkey(id, full_name)
+      `)
+      .eq("project_id", projectId)
+      .order("position", { ascending: true });
+    
+    if (data) {
+      setTasks(data as Task[]);
+      router.refresh(); // Server components ko bhi fresh rakho
+    }
+  }, [projectId, supabase, router]);
+
+  // 2. Focus Handler (Jab user tab par wapas aaye)
   useEffect(() => {
-    // Subscribe to realtime changes
+    const onFocus = () => {
+      refreshTasks();
+    };
+
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [refreshTasks]);
+
+  // 3. Realtime Subscription (Simplified)
+  useEffect(() => {
     const channel = supabase
       .channel(`tasks:${projectId}`)
       .on(
@@ -40,42 +72,10 @@ export function RealtimeTaskBoard({
           table: "tasks",
           filter: `project_id=eq.${projectId}`,
         },
-        async (payload) => {
-          if (payload.eventType === "INSERT") {
-            // Fetch complete task with relations
-            const { data } = await supabase
-              .from("tasks")
-              .select(`
-                *,
-                assignee:profiles!tasks_assigned_to_fkey(id, full_name, avatar_url),
-                creator:profiles!tasks_created_by_fkey(id, full_name)
-              `)
-              .eq("id", payload.new.id)
-              .single();
-            
-            if (data) {
-              setTasks((prev) => [...prev, data as Task]);
-            }
-          } else if (payload.eventType === "UPDATE") {
-            // Fetch updated task with relations
-            const { data } = await supabase
-              .from("tasks")
-              .select(`
-                *,
-                assignee:profiles!tasks_assigned_to_fkey(id, full_name, avatar_url),
-                creator:profiles!tasks_created_by_fkey(id, full_name)
-              `)
-              .eq("id", payload.new.id)
-              .single();
-            
-            if (data) {
-              setTasks((prev) =>
-                prev.map((t) => (t.id === payload.new.id ? data as Task : t))
-              );
-            }
-          } else if (payload.eventType === "DELETE") {
-            setTasks((prev) => prev.filter((t) => t.id !== payload.old.id));
-          }
+        (payload) => {
+          // ⚡ Logic: Kuch bhi change hua (Insert/Update/Delete), bas fresh data le aao.
+          // Ye 100% accurate hota hai aur manual merging ke bugs se bachaata hai.
+          refreshTasks();
         }
       )
       .subscribe();
@@ -83,9 +83,9 @@ export function RealtimeTaskBoard({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [projectId, supabase]);
+  }, [projectId, supabase, refreshTasks]);
 
-  // Update tasks when initialTasks changes (e.g., from server revalidation)
+  // Initial props update
   useEffect(() => {
     setTasks(initialTasks);
   }, [initialTasks]);
@@ -98,6 +98,7 @@ export function RealtimeTaskBoard({
       tasks={tasks}
       members={members}
       canEdit={canEdit}
+      milestones={milestones}
     />
   );
 }

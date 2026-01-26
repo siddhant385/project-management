@@ -7,6 +7,7 @@ import {
   updateMilestoneProgress,
   deleteMilestone,
 } from "@/actions/milestones";
+import { AIMilestoneSuggestions } from "@/components/ai/ai-milestone-suggestions"; // 👈 1. Import Add kar
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -78,6 +79,8 @@ const statusConfig: Record<
 
 interface ProjectTimelineProps {
   projectId: string;
+  projectTitle: string;
+  projectDescription: string;
   milestones: Milestone[];
   members: Array<{
     user_id: string;
@@ -88,6 +91,8 @@ interface ProjectTimelineProps {
 
 export function ProjectTimeline({
   projectId,
+  projectTitle,
+  projectDescription,
   milestones,
   members,
   canEdit,
@@ -152,7 +157,22 @@ export function ProjectTimeline({
           </p>
         </div>
         {canEdit && (
-          <CreateMilestoneDialog projectId={projectId} members={members} />
+          <div className="flex items-center gap-2">
+            
+            {/* AI Button */}
+            <AIMilestoneSuggestions 
+              projectId={projectId}
+              projectTitle={projectTitle}
+              projectDescription={projectDescription}
+              existingMilestones={milestones.map(m => m.title)}
+            />
+
+            {/* Manual Button */}
+            <CreateMilestoneDialog 
+              projectId={projectId} 
+              members={members} 
+            />
+          </div>
         )}
       </div>
 

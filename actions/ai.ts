@@ -55,7 +55,7 @@ Write the description now:`;
 }
 
 // ---------------------------------------------------------
-// 2. GENERATE TASK SUGGESTIONS
+// 2. GENERATE TASK SUGGESTIONS (Updated with Milestone Support)
 // ---------------------------------------------------------
 export interface SuggestedTask {
   title: string;
@@ -68,7 +68,8 @@ export async function generateTaskSuggestions(
   projectTitle: string,
   projectDescription: string,
   existingTasks: string[],
-  numberOfTasks: number = 5
+  numberOfTasks: number = 5,
+  milestoneContext?: { title: string; description: string } | null // 👈 NEW Parameter added
 ): Promise<{ tasks: SuggestedTask[] | null; error: string | null }> {
   try {
     const supabase = await createClient();
@@ -82,19 +83,27 @@ export async function generateTaskSuggestions(
       ? `\nExisting tasks (don't repeat these): ${existingTasks.join(", ")}`
       : "";
 
-    const prompt = `You are a project planning assistant for an engineering college project management system.
+    let prompt = "";
 
-Generate ${numberOfTasks} task suggestions for the following project:
+    // 👇 LOGIC: Agar Milestone selected hai, to specific prompt, nahi to general prompt
+    if (milestoneContext) {
+      prompt = `You are a project planning assistant for an engineering college project management system.
 
+Generate ${numberOfTasks} specific tasks to complete the following TARGET MILESTONE:
+
+🎯 TARGET MILESTONE: "${milestoneContext.title}"
+Milestone Description: ${milestoneContext.description || "N/A"}
+
+Project Context:
 Project Title: ${projectTitle}
 Project Description: ${projectDescription}
 ${existingTasksText}
 
 Requirements:
-1. Each task should be specific and actionable
-2. Tasks should follow a logical sequence for project completion
-3. Include a mix of priorities (low, medium, high)
-4. Estimate realistic days for each task (1-14 days range)
+1. Tasks MUST be directly related to completing the selected milestone.
+2. Tasks should be specific, actionable, and technical if needed.
+3. Include a mix of priorities (low, medium, high).
+4. Estimate realistic days (within the milestone's scope).
 
 Respond ONLY in valid JSON with this structure:
 {
@@ -107,6 +116,34 @@ Respond ONLY in valid JSON with this structure:
     }
   ]
 }`;
+    } else {
+      // 🟢 OLD LOGIC (General Project Tasks)
+      prompt = `You are a project planning assistant for an engineering college project management system.
+
+Generate ${numberOfTasks} task suggestions for the following project:
+
+Project Title: ${projectTitle}
+Project Description: ${projectDescription}
+${existingTasksText}
+
+Requirements:
+1. Each task should be specific and actionable.
+2. Tasks should follow a logical sequence for project completion.
+3. Include a mix of priorities (low, medium, high).
+4. Estimate realistic days for each task (1-14 days range).
+
+Respond ONLY in valid JSON with this structure:
+{
+  "tasks": [
+    {
+      "title": "Task title here",
+      "description": "Brief task description",
+      "priority": "medium",
+      "estimatedDays": 3
+    }
+  ]
+}`;
+    }
 
     // FIX: Using generationConfig to force JSON
     const result = await geminiModel.generateContent({
@@ -123,7 +160,6 @@ Respond ONLY in valid JSON with this structure:
     
     try {
       // Clean up markdown just in case (e.g. ```json ... ```) 
-      // although strict JSON mode usually handles it, this is a safety net.
       const cleanText = text.replace(/```json/g, "").replace(/```/g, "").trim();
       parsed = JSON.parse(cleanText);
     } catch (e) {
@@ -153,9 +189,107 @@ Respond ONLY in valid JSON with this structure:
   }
 }
 
+// export interface SuggestedTask {
+//   title: string;
+//   description: string;
+//   priority: "low" | "medium" | "high";
+//   estimatedDays: number;
+// }
+
+// export async function generateTaskSuggestions(
+//   projectTitle: string,
+//   projectDescription: string,
+//   existingTasks: string[],
+//   numberOfTasks: number = 5
+// ): Promise<{ tasks: SuggestedTask[] | null; error: string | null }> {
+//   try {
+//     const supabase = await createClient();
+//     const { data: { user } } = await supabase.auth.getUser();
+    
+//     if (!user) {
+//       return { tasks: null, error: "Unauthorized" };
+//     }
+
+//     const existingTasksText = existingTasks.length > 0 
+//       ? `\nExisting tasks (don't repeat these): ${existingTasks.join(", ")}`
+//       : "";
+
+//     const prompt = `You are a project planning assistant for an engineering college project management system.
+
+// Generate ${numberOfTasks} task suggestions for the following project:
+
+// Project Title: ${projectTitle}
+// Project Description: ${projectDescription}
+// ${existingTasksText}
+
+// Requirements:
+// 1. Each task should be specific and actionable
+// 2. Tasks should follow a logical sequence for project completion
+// 3. Include a mix of priorities (low, medium, high)
+// 4. Estimate realistic days for each task (1-14 days range)
+
+// Respond ONLY in valid JSON with this structure:
+// {
+//   "tasks": [
+//     {
+//       "title": "Task title here",
+//       "description": "Brief task description",
+//       "priority": "medium",
+//       "estimatedDays": 3
+//     }
+//   ]
+// }`;
+
+//     // FIX: Using generationConfig to force JSON
+//     const result = await geminiModel.generateContent({
+//       contents: [{ role: "user", parts: [{ text: prompt }] }],
+//       generationConfig: {
+//         responseMimeType: "application/json",
+//       },
+//     });
+
+//     const response = result.response;
+//     const text = response.text();
+    
+//     let parsed = null;
+    
+//     try {
+//       // Clean up markdown just in case (e.g. ```json ... ```) 
+//       // although strict JSON mode usually handles it, this is a safety net.
+//       const cleanText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+//       parsed = JSON.parse(cleanText);
+//     } catch (e) {
+//       console.error("JSON Parse Error raw text:", text);
+//       return { tasks: null, error: "Invalid response format from AI" };
+//     }
+
+//     if (!parsed || !parsed.tasks) {
+//       return { tasks: null, error: "Invalid data structure received" };
+//     }
+
+//     // Validate and sanitize tasks
+//     const tasks: SuggestedTask[] = parsed.tasks.map((task: any) => ({
+//       title: String(task.title).slice(0, 100),
+//       description: String(task.description).slice(0, 500),
+//       priority: ["low", "medium", "high"].includes(task.priority) ? task.priority : "medium",
+//       estimatedDays: Math.min(Math.max(Number(task.estimatedDays) || 3, 1), 30),
+//     }));
+
+//     return { tasks, error: null };
+//   } catch (error) {
+//     console.error("AI Generation Error:", error);
+//     return { 
+//       tasks: null, 
+//       error: "Failed to generate tasks. Please try again." 
+//     };
+//   }
+// }
+
 // ---------------------------------------------------------
 // 3. GENERATE PROJECT RECOMMENDATIONS FOR STUDENTS
 // ---------------------------------------------------------
+
+
 export interface ProjectRecommendation {
   projectId: string;
   matchScore: number;
@@ -255,6 +389,96 @@ Respond ONLY in valid JSON with this structure:
     return { 
       recommendations: null, 
       error: "Failed to generate recommendations. Please try again." 
+    };
+  }
+}
+
+// ---------------------------------------------------------
+// 4. GENERATE MILESTONE SUGGESTIONS (New Feature)
+// ---------------------------------------------------------
+export interface SuggestedMilestone {
+  title: string;
+  description: string;
+  estimatedDaysFromNow: number; // AI batayega ki ye milestone start hone ke kitne din baad khatam hona chahiye
+}
+
+export async function generateMilestoneSuggestions(
+  projectTitle: string,
+  projectDescription: string,
+  existingMilestones: string[],
+  numberOfMilestones: number = 5
+): Promise<{ milestones: SuggestedMilestone[] | null; error: string | null }> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return { milestones: null, error: "Unauthorized" };
+    }
+
+    const existingText = existingMilestones.length > 0 
+      ? `\nExisting milestones (don't repeat these): ${existingMilestones.join(", ")}`
+      : "";
+
+    const prompt = `You are a project manager for an engineering college project.
+
+Generate ${numberOfMilestones} major milestones for the following project:
+
+Project Title: ${projectTitle}
+Project Description: ${projectDescription}
+${existingText}
+
+Requirements:
+1. Milestones should represent major phases (e.g., "Requirement Gathering", "Prototype Development", "Final Testing").
+2. They should follow a chronological order.
+3. Estimate "estimatedDaysFromNow" as a cumulative number (e.g., Milestone 1 ends on day 10, Milestone 2 ends on day 25).
+
+Respond ONLY in valid JSON with this structure:
+{
+  "milestones": [
+    {
+      "title": "Milestone Title",
+      "description": "Brief description of goals",
+      "estimatedDaysFromNow": 14
+    }
+  ]
+}`;
+
+    const result = await geminiModel.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+      },
+    });
+
+    const response = result.response;
+    const text = response.text();
+    
+    let parsed = null;
+    try {
+      const cleanText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+      parsed = JSON.parse(cleanText);
+    } catch (e) {
+      return { milestones: null, error: "Invalid response format from AI" };
+    }
+
+    if (!parsed || !parsed.milestones) {
+      return { milestones: null, error: "Invalid data structure received" };
+    }
+
+    // Validate data
+    const milestones: SuggestedMilestone[] = parsed.milestones.map((m: any) => ({
+      title: String(m.title).slice(0, 100),
+      description: String(m.description).slice(0, 500),
+      estimatedDaysFromNow: Number(m.estimatedDaysFromNow) || 7,
+    }));
+
+    return { milestones, error: null };
+  } catch (error) {
+    console.error("AI Generation Error:", error);
+    return { 
+      milestones: null, 
+      error: "Failed to generate milestones. Please try again." 
     };
   }
 }

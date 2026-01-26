@@ -5,8 +5,11 @@ import { createClient } from "@/lib/supabase/client";
 import { Milestone, MilestoneStatus } from "@/actions/milestones";
 import { ProjectTimeline } from "./project-timeline";
 
+// 1. Interface me Title aur Description add kiya
 interface RealtimeTimelineProps {
   projectId: string;
+  projectTitle: string;       // New
+  projectDescription: string; // New
   initialMilestones: Milestone[];
   members: Array<{ 
     user_id: string; 
@@ -16,7 +19,9 @@ interface RealtimeTimelineProps {
 }
 
 export function RealtimeTimeline({ 
-  projectId, 
+  projectId,
+  projectTitle,       // 2. Yahan destructure kiya
+  projectDescription, // 2. Yahan destructure kiya
   initialMilestones, 
   members, 
   canEdit 
@@ -25,7 +30,8 @@ export function RealtimeTimeline({
   const supabase = createClient();
 
   useEffect(() => {
-    // Subscribe to realtime changes
+    // ... Ye Realtime logic same rahega (Copy paste mat karna agar already sahi hai) ...
+    // Bas niche return statement dekh le
     const channel = supabase
       .channel(`milestones:${projectId}`)
       .on(
@@ -38,7 +44,6 @@ export function RealtimeTimeline({
         },
         async (payload) => {
           if (payload.eventType === "INSERT") {
-            // Fetch complete milestone with relations
             const { data } = await supabase
               .from("milestones")
               .select(`
@@ -49,7 +54,6 @@ export function RealtimeTimeline({
               .single();
             
             if (data) {
-              // Check for overdue
               const now = new Date();
               const milestone = data as Milestone;
               if (new Date(milestone.due_date) < now && milestone.status !== "completed") {
@@ -58,7 +62,6 @@ export function RealtimeTimeline({
               setMilestones((prev) => [...prev, milestone]);
             }
           } else if (payload.eventType === "UPDATE") {
-            // Fetch updated milestone with relations
             const { data } = await supabase
               .from("milestones")
               .select(`
@@ -90,7 +93,6 @@ export function RealtimeTimeline({
     };
   }, [projectId, supabase]);
 
-  // Update milestones when initialMilestones changes
   useEffect(() => {
     setMilestones(initialMilestones);
   }, [initialMilestones]);
@@ -98,6 +100,8 @@ export function RealtimeTimeline({
   return (
     <ProjectTimeline
       projectId={projectId}
+      projectTitle={projectTitle}             // 3. Yahan Pass kiya
+      projectDescription={projectDescription} // 3. Yahan Pass kiya
       milestones={milestones}
       members={members}
       canEdit={canEdit}

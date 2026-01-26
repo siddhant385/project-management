@@ -117,7 +117,8 @@ export default async function ProjectPage({ params }: Props) {
            )}
 
            {/* VISITOR ACTIONS (Apply Logic) */}
-           {!userRole.isOwner && !userRole.isMember && !userRole.hasApplied && project.status === 'open' && (
+           {!userRole.isOwner && !userRole.isMember && !userRole.hasApplied && project.status === 'open' && 
+           !(userRole.isMentor && project.final_mentor_id) &&(
              <ApplyButton projectId={project.id} projectTitle={project.title} />
            )}
 
@@ -231,6 +232,8 @@ export default async function ProjectPage({ params }: Props) {
           <RealtimeTimeline 
             projectId={project.id}
             initialMilestones={milestones}
+            projectTitle={project.title}
+            projectDescription={project.description}
             members={members.map((m: any) => ({
               user_id: m.user_id,
               profile: {
@@ -250,6 +253,7 @@ export default async function ProjectPage({ params }: Props) {
             projectTitle={project.title}
             projectDescription={project.description}
             initialTasks={tasks}
+            milestones={milestones}
             members={members.map((m: any) => ({
               user_id: m.user_id,
               profile: {
