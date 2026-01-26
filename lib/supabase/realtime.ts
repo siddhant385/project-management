@@ -207,15 +207,40 @@ export function useRealtimeNotifications(userId: string) {
 }
 
 // Hook for realtime applications (Requests) - THIS ONE FIXES YOUR ISSUE
+// realtime.ts
+
+// ... baki imports same ...
+
 export function useRealtimeApplications(projectId: string, initialData: any[] = []) {
   const [applications, setApplications] = useState<any[]>(initialData);
   const supabase = createClient();
-  const router = useRouter(); // 👈 Important
+  const router = useRouter();
 
+  // 1. Sync with Server Data (Jab page refresh ho)
   useEffect(() => {
     setApplications(initialData);
   }, [initialData]);
 
+  // 2. Fetch Fresh Data on Mount (Ye wala part missing tha!) [Cite: realtime.ts]
+  useEffect(() => {
+    const fetchApplications = async () => {
+      const { data } = await supabase
+        .from("project_applications")
+        .select(`
+          *,
+          applicant:profiles!project_applications_applicant_id_fkey(full_name, avatar_url, roll_number, skills)
+        `)
+        .eq("project_id", projectId);
+      
+      if (data) {
+        setApplications(data);
+      }
+    };
+
+    fetchApplications();
+  }, [projectId]);
+
+  // 3. Realtime Subscription
   useEffect(() => {
     const channel = supabase
       .channel(`applications:${projectId}`)
@@ -228,7 +253,6 @@ export function useRealtimeApplications(projectId: string, initialData: any[] = 
           filter: `project_id=eq.${projectId}`,
         },
         async (payload) => {
-          // 1. Update Local State (For Badge)
           if (payload.eventType === "INSERT") {
             const { data: newApp } = await supabase
               .from("project_applications")
@@ -256,8 +280,6 @@ export function useRealtimeApplications(projectId: string, initialData: any[] = 
             );
           }
 
-          // 2. Trigger Server Refresh (For List Tab)
-          // Isse jab tum tab switch karoge, to 'initialData' fresh hoga
           router.refresh();
         }
       )
@@ -266,7 +288,7 @@ export function useRealtimeApplications(projectId: string, initialData: any[] = 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [projectId, router]); // Added router to dependency
+  }, [projectId, router]);
 
   return { applications };
 }
