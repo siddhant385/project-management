@@ -102,7 +102,7 @@ export default function MentorOnboarding() {
                         <SelectItem value="ME">Mechanical Engineering (ME)</SelectItem>
                         <SelectItem value="AIDS">Artificial Intelligence and Data Science (AIDS)</SelectItem>
                         <SelectItem value="EE">Electrical Engineering (EE)</SelectItem>
-                        <SelectItem value="MECH">Mechanical Engineering (MECH)</SelectItem>
+                        <SelectItem value="MECH">Mechatronics (MECH)</SelectItem>
                         <SelectItem value="IP">Industrial and Production Engineering (IP)</SelectItem>
                         <SelectItem value="MATH">Mathematics Dept (MATH)</SelectItem>
                         <SelectItem value="CHEM">Chemistry Dept (CHEM)</SelectItem>
