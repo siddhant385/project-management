@@ -156,14 +156,21 @@ export default async function MentorDashboard() {
         .order('created_at', { ascending: false })
         .limit(10)
     : { data: [] }
-  const activeProjects = assigned_projects.filter((p: any) => p.status === 'in_progress') || []
+  // const activeProjects = assigned_projects.filter((p: any) => p.status === 'in_progress') || []
+  const activeProjects = assigned_projects.filter((p: any) => 
+    p.status === 'in_progress' || 
+    (p.status === 'open' && p.initiator_id === user?.id)
+  ) || []
   const completedProjects = assigned_projects.filter((p: any) => 
     ['evaluated', 'submitted'].includes(p.status)
   ) || []
+  // const completedProjects = assigned_projects.filter((p: any) => 
+  //   ['evaluated', 'submitted'].includes(p.status)
+  // ) || []
   // const completedProjects = assigned_projects.filter((p: any) => p.status === 'completed') || []
 
   // Calculate statistics
-  const totalStudents = new Set(assigned_projects.map((p: any) => p.student_id || p.initiator?.id)).size
+  // const totalStudents = new Set(assigned_projects.map((p: any) => p.student_id || p.initiator?.id)).size
   const upcomingMilestones = milestones?.filter((m: any) => 
     m.status !== 'completed' && new Date(m.due_date) > new Date()
   ) || []
@@ -181,6 +188,26 @@ export default async function MentorDashboard() {
     const totalProgress = projectMilestones.reduce((sum: number, m: any) => sum + m.progress, 0)
     return Math.round(totalProgress / projectMilestones.length)
   }
+  const uniqueStudentIds = new Set<string>()
+
+  assigned_projects.forEach((project: any) => {
+    // 1. Add Initiator (agar wo mentor khud nahi hai)
+    if (project.initiator_id && project.initiator_id !== user.id) {
+      uniqueStudentIds.add(project.initiator_id)
+    }
+
+    // 2. Add Team Members (from project_members table)
+    if (project.members && Array.isArray(project.members)) {
+      project.members.forEach((member: any) => {
+        // Mentor ko count mat karo agar wo galti se member table me hai
+        if (member.user_id !== user.id) {
+          uniqueStudentIds.add(member.user_id)
+        }
+      })
+    }
+  })
+
+  const totalStudents = uniqueStudentIds.size
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">

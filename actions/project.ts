@@ -11,20 +11,41 @@ export async function createProject(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  // Step 1: Check User Role first
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile) throw new Error('Profile not found')
+
   const title = formData.get('title') as string
   const description = formData.get('description') as string
   const tagsString = formData.get('tags') as string
   const tags = tagsString ? tagsString.split(',').map(t => t.trim()) : []
 
+  // Step 2: Prepare Insert Data
+  // Agar Mentor hai to 'final_mentor_id' set karo, warna sirf 'initiator_id'
+  const insertData: any = {
+    title,
+    description,
+    tags,
+    initiator_id: user.id,
+    status: 'open' // Default status
+  }
+
+  if (profile.role === 'mentor') {
+    insertData.final_mentor_id = user.id
+    // Mentor ke projects seedhe 'mentor_assigned' bhi ho sakte hain, 
+    // par students ko apply karne ke liye 'open' rakhna better hai.
+    // Lekin mentor already assigned hai.
+    insertData.status = 'open' 
+  }
+
   const { data: project, error } = await supabase
     .from('projects')
-    .insert({
-      title,
-      description,
-      tags,
-      initiator_id: user.id,
-      status: 'open'
-    })
+    .insert(insertData)
     .select()
     .single()
 
@@ -33,15 +54,25 @@ export async function createProject(formData: FormData) {
     throw new Error('Failed to create project')
   }
 
-  // Owner ko automatically project_members me add karo as Lead
-  await supabase.from('project_members').insert({
-    project_id: project.id,
-    user_id: user.id,
-    is_lead: true
-  })
+  // Step 3: Handle Team Members
+  // Agar Student hai (Lead), tabhi 'project_members' me add karo.
+  // Mentor ko 'project_members' table me add nahi krna chahiye (wo projects table me handled h)
+  if (profile.role !== 'mentor') {
+    await supabase.from('project_members').insert({
+      project_id: project.id,
+      user_id: user.id,
+      is_lead: true
+    })
+  }
 
-  revalidatePath('/student')
-  redirect('/student')
+  // Redirect Logic
+  if (profile.role === 'mentor') {
+     revalidatePath('/mentor') // Ya mentor dashboard path
+     redirect('/mentor')
+  } else {
+     revalidatePath('/student')
+     redirect('/student')
+  }
 }
 
 // 2. UPDATE PROJECT

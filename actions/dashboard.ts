@@ -266,63 +266,120 @@ export async function getStudentDashboardData() {
 }
 
 // 3. Mentor Dashboard Data (UPDATED)
+// export async function getMentorDashboardData() {
+//   const supabase = await createClient()
+//   const { data: { user } } = await supabase.auth.getUser()
+  
+//   if (!user) return { assigned_projects: [], pending_reviews: [], open_projects: [], stats: { total_mentees: 0, pending_reviews: 0, projects_completed: 0 } }
+
+//   // A. Projects where I am the assigned Mentor
+//   const { data: assignedProjects } = await supabase
+//     .from('projects')
+//     .select('*, initiator:profiles!initiator_id(full_name)')
+//     .eq('final_mentor_id', user.id)
+//     .order('created_at', { ascending: false })
+    
+//   // B. Pending Requests logic
+//   const { data: myProjects } = await supabase
+//     .from('projects')
+//     .select('id')
+//     .eq('initiator_id', user.id)
+
+//   const myProjectIds = myProjects?.map(p => p.id) || []
+
+//   let requests: any[] = []
+//   if (myProjectIds.length > 0) {
+//     const { data } = await supabase
+//       .from('project_applications')
+//       .select('*, project:projects(title), applicant:profiles(full_name, roll_number)')
+//       .eq('status', 'pending')
+//       .in('project_id', myProjectIds)
+    
+//     requests = data || []
+//   }
+
+//   // C. Fetch Open Projects (Seeking Mentor)
+//   const { data: openProjects } = await supabase
+//     .from('projects')
+//     .select('*, initiator:profiles!initiator_id(full_name, department)')
+//     .is('final_mentor_id', null)
+//     .eq('status', 'open')
+//     .neq('initiator_id', user.id)
+//     .limit(5)
+
+//   // D. Stats
+//   const stats = {
+//     total_mentees: assignedProjects?.length || 0,
+//     pending_reviews: requests.length,
+//     // FIX: Using 'evaluated' or 'submitted' for completed status
+//     projects_completed: assignedProjects?.filter((p: any) => p.status === 'evaluated' || p.status === 'submitted').length || 0
+//   }
+
+//   return {
+//     assigned_projects: assignedProjects || [],
+//     pending_reviews: requests,
+//     open_projects: openProjects || [],
+//     stats
+//   }
+// }
 export async function getMentorDashboardData() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) return { assigned_projects: [], pending_reviews: [], open_projects: [], stats: { total_mentees: 0, pending_reviews: 0, projects_completed: 0 } }
 
-  // A. Projects where I am the assigned Mentor
-  const { data: assignedProjects } = await supabase
+  // A. Projects where I am the assigned Mentor OR I created them (Proposed)
+  const { data: allInvolvedProjects } = await supabase
     .from('projects')
-    .select('*, initiator:profiles!initiator_id(full_name)')
-    .eq('final_mentor_id', user.id)
-    .order('created_at', { ascending: false })
-    
-  // B. Pending Requests logic
-  const { data: myProjects } = await supabase
-    .from('projects')
-    .select('id')
-    .eq('initiator_id', user.id)
-
-  const myProjectIds = myProjects?.map(p => p.id) || []
+    // CHANGE HERE: Maine 'members:project_members(user_id)' add kiya hai
+    .select('*, initiator:profiles!initiator_id(full_name), members:project_members(user_id)')
+    .or(`final_mentor_id.eq.${user.id},initiator_id.eq.${user.id}`)
+    .order('created_at', { ascending: false })  // B. Pending Requests logic
+  // Ab hum 'allInvolvedProjects' se hi IDs nikaal sakte hain jaha hum initiator hain
+  const myCreatedProjectIds = allInvolvedProjects
+    ?.filter((p: any) => p.initiator_id === user.id)
+    .map((p: any) => p.id) || []
 
   let requests: any[] = []
-  if (myProjectIds.length > 0) {
+  if (myCreatedProjectIds.length > 0) {
     const { data } = await supabase
       .from('project_applications')
       .select('*, project:projects(title), applicant:profiles(full_name, roll_number)')
       .eq('status', 'pending')
-      .in('project_id', myProjectIds)
+      .in('project_id', myCreatedProjectIds)
     
     requests = data || []
   }
 
   // C. Fetch Open Projects (Seeking Mentor)
+  // FIX: Exclude projects created by ME (kyunki wo assigned_projects me dikhenge)
   const { data: openProjects } = await supabase
     .from('projects')
     .select('*, initiator:profiles!initiator_id(full_name, department)')
     .is('final_mentor_id', null)
     .eq('status', 'open')
-    .neq('initiator_id', user.id)
+    .neq('initiator_id', user.id) // Apne khud ke projects yaha mat dikhao
     .limit(5)
 
   // D. Stats
+  // Completed count logic: status 'evaluated' ya 'submitted'
+  const completedCount = allInvolvedProjects?.filter((p: any) => 
+    p.status === 'evaluated' || p.status === 'submitted'
+  ).length || 0
+
   const stats = {
-    total_mentees: assignedProjects?.length || 0,
+    total_mentees: allInvolvedProjects?.length || 0,
     pending_reviews: requests.length,
-    // FIX: Using 'evaluated' or 'submitted' for completed status
-    projects_completed: assignedProjects?.filter((p: any) => p.status === 'evaluated' || p.status === 'submitted').length || 0
+    projects_completed: completedCount
   }
 
   return {
-    assigned_projects: assignedProjects || [],
+    assigned_projects: allInvolvedProjects || [],
     pending_reviews: requests,
     open_projects: openProjects || [],
     stats
   }
 }
-
 // 4. Get Mentor Chart Data - Project Performance & Activity Heatmap
 export async function getMentorChartData() {
   const supabase = await createClient()
