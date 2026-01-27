@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createProject } from "@/actions/project";
+import { useRouter } from "next/navigation"; // 1. Router Import karo
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +20,7 @@ import { AIDescriptionButton } from "@/components/ai";
 import { toast } from "sonner";
 
 export function CreateProjectForm() {
+  const router = useRouter(); // 2. Router initialize karo
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
@@ -34,9 +36,14 @@ CreateProjectForm
       formData.append("description", description);
       formData.append("tags", tags);
 
-      await createProject(formData);
+      const result = await createProject(formData);
+      if (result.success) {
+        toast.success("Project created successfully!");
+        // 4. Manually redirect karo
+        router.push(result.path);
+      }
       // createProject redirects on success, so this won't execute
-      toast.success("Project created successfully!");
+      // toast.success("Project created successfully!");
     } catch (error) {
       console.log(error)
       toast.error("Failed to create project");

@@ -5,13 +5,83 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 // 1. CREATE PROJECT
+// export async function createProject(formData: FormData) {
+//   const supabase = await createClient()
+  
+//   const { data: { user } } = await supabase.auth.getUser()
+//   if (!user) redirect('/login')
+
+//   // Step 1: Check User Role first
+//   const { data: profile } = await supabase
+//     .from('profiles')
+//     .select('role')
+//     .eq('id', user.id)
+//     .single()
+
+//   if (!profile) throw new Error('Profile not found')
+
+//   const title = formData.get('title') as string
+//   const description = formData.get('description') as string
+//   const tagsString = formData.get('tags') as string
+//   const tags = tagsString ? tagsString.split(',').map(t => t.trim()) : []
+
+//   // Step 2: Prepare Insert Data
+//   // Agar Mentor hai to 'final_mentor_id' set karo, warna sirf 'initiator_id'
+//   const insertData: any = {
+//     title,
+//     description,
+//     tags,
+//     initiator_id: user.id,
+//     status: 'open' // Default status
+//   }
+
+//   if (profile.role === 'mentor') {
+//     insertData.final_mentor_id = user.id
+//     // Mentor ke projects seedhe 'mentor_assigned' bhi ho sakte hain, 
+//     // par students ko apply karne ke liye 'open' rakhna better hai.
+//     // Lekin mentor already assigned hai.
+//     insertData.status = 'open' 
+//   }
+
+//   const { data: project, error } = await supabase
+//     .from('projects')
+//     .insert(insertData)
+//     .select()
+//     .single()
+
+//   if (error) {
+//     console.error('Create Project Error:', error)
+//     throw new Error('Failed to create project')
+//   }
+
+//   // Step 3: Handle Team Members
+//   // Agar Student hai (Lead), tabhi 'project_members' me add karo.
+//   // Mentor ko 'project_members' table me add nahi krna chahiye (wo projects table me handled h)
+//   if (profile.role !== 'mentor') {
+//     await supabase.from('project_members').insert({
+//       project_id: project.id,
+//       user_id: user.id,
+//       is_lead: true
+//     })
+//   }
+
+//   // Redirect Logic
+//   if (profile.role === 'mentor') {
+//      revalidatePath('/mentor') // Ya mentor dashboard path
+//      redirect('/mentor')
+//   } else {
+//      revalidatePath('/student')
+//      redirect('/student')
+//   }
+// }
+
+// project.ts
 export async function createProject(formData: FormData) {
   const supabase = await createClient()
   
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) throw new Error('Unauthorized')
 
-  // Step 1: Check User Role first
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
@@ -25,54 +95,50 @@ export async function createProject(formData: FormData) {
   const tagsString = formData.get('tags') as string
   const tags = tagsString ? tagsString.split(',').map(t => t.trim()) : []
 
-  // Step 2: Prepare Insert Data
-  // Agar Mentor hai to 'final_mentor_id' set karo, warna sirf 'initiator_id'
   const insertData: any = {
     title,
     description,
     tags,
     initiator_id: user.id,
-    status: 'open' // Default status
+    status: 'open'
   }
 
   if (profile.role === 'mentor') {
     insertData.final_mentor_id = user.id
-    // Mentor ke projects seedhe 'mentor_assigned' bhi ho sakte hain, 
-    // par students ko apply karne ke liye 'open' rakhna better hai.
-    // Lekin mentor already assigned hai.
-    insertData.status = 'open' 
   }
 
-  const { data: project, error } = await supabase
+  const { data: project, error: createError } = await supabase
     .from('projects')
     .insert(insertData)
     .select()
     .single()
 
-  if (error) {
-    console.error('Create Project Error:', error)
+  if (createError) {
+    console.error('Create Project Error:', createError)
     throw new Error('Failed to create project')
   }
 
-  // Step 3: Handle Team Members
-  // Agar Student hai (Lead), tabhi 'project_members' me add karo.
-  // Mentor ko 'project_members' table me add nahi krna chahiye (wo projects table me handled h)
   if (profile.role !== 'mentor') {
-    await supabase.from('project_members').insert({
-      project_id: project.id,
-      user_id: user.id,
-      is_lead: true
-    })
+    const { error: memberError } = await supabase
+      .from('project_members')
+      .insert({
+        project_id: project.id,
+        user_id: user.id,
+        is_lead: true
+      })
+
+    if (memberError) {
+      console.error('Failed to add member:', memberError)
+      await supabase.from('projects').delete().eq('id', project.id)
+      throw new Error('Project creation failed at member assignment')
+    }
   }
 
-  // Redirect Logic
-  if (profile.role === 'mentor') {
-     revalidatePath('/mentor') // Ya mentor dashboard path
-     redirect('/mentor')
-  } else {
-     revalidatePath('/student')
-     redirect('/student')
-  }
+  const redirectPath = profile.role === 'mentor' ? '/mentor' : '/student'
+  revalidatePath(redirectPath)
+  
+  // FIX: Redirect yahan mat karo, bas path return karo
+  return { success: true, path: redirectPath }
 }
 
 // 2. UPDATE PROJECT
