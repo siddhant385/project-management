@@ -23,7 +23,7 @@ export function CreateProjectForm() {
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+CreateProjectForm
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -38,6 +38,7 @@ export function CreateProjectForm() {
       // createProject redirects on success, so this won't execute
       toast.success("Project created successfully!");
     } catch (error) {
+      console.log(error)
       toast.error("Failed to create project");
       setIsSubmitting(false);
     }
