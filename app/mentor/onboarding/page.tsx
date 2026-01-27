@@ -97,7 +97,17 @@ export default function MentorOnboarding() {
                       <SelectContent>
                         <SelectItem value="CSE">Computer Science (CSE)</SelectItem>
                         <SelectItem value="IT">Information Tech (IT)</SelectItem>
-                        <SelectItem value="ECE">Electronics (ECE)</SelectItem>
+                        <SelectItem value="ECE">Electronics Communications (ECE)</SelectItem>
+                        <SelectItem value="CE">Civil Engineering (CE)</SelectItem>
+                        <SelectItem value="ME">Mechanical Engineering (ME)</SelectItem>
+                        <SelectItem value="AIDS">Artificial Intelligence and Data Science (AIDS)</SelectItem>
+                        <SelectItem value="EE">Electrical Engineering (EE)</SelectItem>
+                        <SelectItem value="MECH">Mechanical Engineering (MECH)</SelectItem>
+                        <SelectItem value="IP">Industrial and Production Engineering (IP)</SelectItem>
+                        <SelectItem value="MATH">Mathematics Dept (MATH)</SelectItem>
+                        <SelectItem value="CHEM">Chemistry Dept (CHEM)</SelectItem>
+                        <SelectItem value="PHY">Physics Dept (PHY)</SelectItem>
+                        <SelectItem value="T&P">Training and Placement Dept (T&P)</SelectItem>
                         {/* Add more as needed */}
                       </SelectContent>
                     </Select>
